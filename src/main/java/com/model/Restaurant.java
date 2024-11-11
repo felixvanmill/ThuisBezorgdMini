@@ -1,6 +1,6 @@
-package model;
+package com.model;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
@@ -26,7 +26,7 @@ public class Restaurant {
         this.location = location;
     }
 
-    // Getters and Setters
+    // Getters en Setters
     public Long getId() {
         return id;
     }

@@ -1,6 +1,6 @@
-package model;
+package com.model;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 public class Address {

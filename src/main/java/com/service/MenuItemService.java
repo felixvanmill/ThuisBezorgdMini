@@ -1,10 +1,13 @@
-package service;
+package com.service;
 
-import model.MenuItem;
+import com.model.MenuItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import repository.MenuItemRepository;
+import com.repository.MenuItemRepository;
+import com.exception.ResourceNotFoundException;
 
+
+import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,17 +29,18 @@ public class MenuItemService {
         return menuItemRepository.save(menuItem);
     }
 
+    @Transactional
     public MenuItem updateMenuItem(Long id, MenuItem menuItemDetails) {
-        Optional<MenuItem> menuItemOptional = menuItemRepository.findById(id);
-        if (menuItemOptional.isPresent()) {
-            MenuItem menuItem = menuItemOptional.get();
-            menuItem.setName(menuItemDetails.getName());
-            menuItem.setDescription(menuItemDetails.getDescription());
-            menuItem.setPrice(menuItemDetails.getPrice());
-            menuItem.setIngredients(menuItemDetails.getIngredients());
-            return menuItemRepository.save(menuItem);
-        }
-        return null; // Hier kun je eventueel een exception gooien als item niet gevonden wordt.
+        MenuItem menuItem = menuItemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
+
+        // Update the fields using the setters
+        menuItem.setName(menuItemDetails.getName());
+        menuItem.setDescription(menuItemDetails.getDescription());
+        menuItem.setPrice(menuItemDetails.getPrice());
+        menuItem.setIngredients(menuItemDetails.getIngredients());
+
+        return menuItemRepository.save(menuItem);
     }
 
     public void deleteMenuItem(Long id) {

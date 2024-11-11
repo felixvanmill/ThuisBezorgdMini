@@ -1,9 +1,9 @@
-package controller;
+package com.controller;
 
-import model.Order;
+import com.model.CustomerOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import service.OrderService;
+import com.service.OrderService;
 
 import java.util.List;
 import java.util.Optional;
@@ -16,22 +16,22 @@ public class OrderController {
     private OrderService orderService;
 
     @GetMapping
-    public List<Order> getAllOrders() {
+    public List<CustomerOrder> getAllOrders() {
         return orderService.getAllOrders();
     }
 
     @GetMapping("/{id}")
-    public Optional<Order> getOrderById(@PathVariable Long id) {
+    public Optional<CustomerOrder> getOrderById(@PathVariable Long id) {
         return orderService.getOrderById(id);
     }
 
     @PostMapping
-    public Order addOrder(@RequestBody Order order) {
+    public CustomerOrder addOrder(@RequestBody CustomerOrder order) {
         return orderService.addOrder(order);
     }
 
     @PutMapping("/{id}")
-    public Order updateOrderStatus(@PathVariable Long id, @RequestParam String status) {
+    public CustomerOrder updateOrderStatus(@PathVariable Long id, @RequestParam String status) {
         return orderService.updateOrderStatus(id, status);
     }
 

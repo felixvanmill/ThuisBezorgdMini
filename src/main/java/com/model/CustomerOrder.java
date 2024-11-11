@@ -1,38 +1,41 @@
-package model;
+package com.model;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 import java.util.List;
 
 @Entity
-public class Order {
+@Table(name = "customer_order")
+public class CustomerOrder {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne
     @JoinColumn(name = "user_id")
-    private User user;
+    private AppUser user;
 
     @ManyToMany
     @JoinTable(
-            name = "order_menu_item",
-            joinColumns = @JoinColumn(name = "order_id"),
+            name = "customer_order_menu_item",
+            joinColumns = @JoinColumn(name = "customer_order_id"),
             inverseJoinColumns = @JoinColumn(name = "menu_item_id")
     )
     private List<MenuItem> menuItems;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL)  // CascadeType.ALL ensures the Address is persisted as part of the CustomerOrder
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     private Address address;
 
-    private String status; // bv. 'PENDING', 'ACCEPTED', 'DELIVERED'
+    private String status;
     private double totalPrice;
 
+
     // Constructors
-    public Order() {
+    public CustomerOrder() {
     }
 
-    public Order(User user, List<MenuItem> menuItems, Address address, String status, double totalPrice) {
+    public CustomerOrder(AppUser user, List<MenuItem> menuItems, Address address, String status, double totalPrice) {
         this.user = user;
         this.menuItems = menuItems;
         this.address = address;
@@ -40,7 +43,7 @@ public class Order {
         this.totalPrice = totalPrice;
     }
 
-    // Getters and Setters
+    // Getters en Setters
     public Long getId() {
         return id;
     }
@@ -49,11 +52,11 @@ public class Order {
         this.id = id;
     }
 
-    public User getUser() {
+    public AppUser getUser() {
         return user;
     }
 
-    public void setUser(User user) {
+    public void setUser(AppUser user) {
         this.user = user;
     }
 

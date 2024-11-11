@@ -1,6 +1,6 @@
-package model;
+package com.model;
 
-import javax.persistence.*;
+import jakarta.persistence.*;
 
 @Entity
 public class MenuItem {
@@ -19,6 +19,11 @@ public class MenuItem {
 
     // Constructors
     public MenuItem() {
+    }
+
+    public MenuItem(String name, double price) {
+        this.name = name;
+        this.price = price;
     }
 
     public MenuItem(String name, String description, double price, String ingredients, Restaurant restaurant) {

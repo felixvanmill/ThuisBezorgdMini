@@ -1,9 +1,9 @@
-package service;
+package com.service;
 
-import model.Restaurant;
+import com.model.Restaurant;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import repository.RestaurantRepository;
+import com.repository.RestaurantRepository;
 
 import java.util.List;
 import java.util.Optional;

@@ -1,6 +1,6 @@
-package repository;
+package com.repository;
 
-import model.Restaurant;
+import com.model.Restaurant;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

@@ -1,15 +1,20 @@
-package controller;
+package com.controller;
 
-import model.User;
-import model.UserRegistrationDTO;
+import com.response.JwtResponse;
+import com.model.AppUser;
+import com.model.UserRegistrationDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
-import service.UserService;
+import com.security.JwtTokenUtil;
+import com.service.UserService;
 
-import javax.validation.Valid;
+import jakarta.validation.Valid;  // Correct import for validation
 import java.util.List;
 import java.util.Optional;
 
@@ -23,13 +28,19 @@ public class UserController {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private AuthenticationManager authenticationManager;
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
+
     @GetMapping
-    public List<User> getAllUsers() {
+    public List<AppUser> getAllUsers() {
         return userService.getAllUsers();
     }
 
     @GetMapping("/{id}")
-    public Optional<User> getUserById(@PathVariable Long id) {
+    public Optional<AppUser> getUserById(@PathVariable Long id) {
         return userService.getUserById(id);
     }
 
@@ -39,7 +50,7 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Username is already taken");
         }
 
-        User user = new User();
+        AppUser user = new AppUser();
         user.setUsername(userRegistrationDTO.getUsername());
         user.setPassword(passwordEncoder.encode(userRegistrationDTO.getPassword())); // Encrypt het wachtwoord
         user.setRole(userRegistrationDTO.getRole());
@@ -48,7 +59,7 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public User updateUser(@PathVariable Long id, @RequestBody User userDetails) {
+    public AppUser updateUser(@PathVariable Long id, @RequestBody AppUser userDetails) {
         return userService.updateUser(id, userDetails);
     }
 
@@ -56,6 +67,7 @@ public class UserController {
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
     }
+
     @PostMapping("/login")
     public ResponseEntity<?> createAuthenticationToken(@RequestBody UserRegistrationDTO authenticationRequest) {
         try {

@@ -1,9 +1,9 @@
-package service;
+package com.service;
 
-import model.User;
+import com.model.AppUser; // Correct gebruik van AppUser, niet User
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import repository.UserRepository;
+import com.repository.AppUserRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,30 +12,30 @@ import java.util.Optional;
 public class UserService {
 
     @Autowired
-    private UserRepository userRepository;
+    private AppUserRepository userRepository;
 
-    public List<User> getAllUsers() {
+    public List<AppUser> getAllUsers() {
         return userRepository.findAll();
     }
 
-    public Optional<User> getUserById(Long id) {
+    public Optional<AppUser> getUserById(Long id) {
         return userRepository.findById(id);
     }
 
-    public User addUser(User user) {
+    public AppUser addUser(AppUser user) {
         return userRepository.save(user);
     }
 
-    public User updateUser(Long id, User userDetails) {
-        Optional<User> userOptional = userRepository.findById(id);
+    public AppUser updateUser(Long id, AppUser userDetails) {
+        Optional<AppUser> userOptional = userRepository.findById(id);
         if (userOptional.isPresent()) {
-            User user = userOptional.get();
+            AppUser user = userOptional.get();
             user.setUsername(userDetails.getUsername());
             user.setPassword(userDetails.getPassword());
             user.setRole(userDetails.getRole());
             return userRepository.save(user);
         }
-        return null; // Hier kun je een exception gooien als de gebruiker niet wordt gevonden.
+        return null; // Hier kun je overwegen een exception te gooien als de gebruiker niet wordt gevonden.
     }
 
     public void deleteUser(Long id) {

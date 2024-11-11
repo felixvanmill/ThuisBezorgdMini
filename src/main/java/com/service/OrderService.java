@@ -1,9 +1,9 @@
-package service;
+package com.service;
 
-import model.Order;
+import com.model.CustomerOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import repository.OrderRepository;
+import com.repository.CustomerOrderRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -12,24 +12,24 @@ import java.util.Optional;
 public class OrderService {
 
     @Autowired
-    private OrderRepository orderRepository;
+    private CustomerOrderRepository orderRepository;
 
-    public List<Order> getAllOrders() {
+    public List<CustomerOrder> getAllOrders() {
         return orderRepository.findAll();
     }
 
-    public Optional<Order> getOrderById(Long id) {
+    public Optional<CustomerOrder> getOrderById(Long id) {
         return orderRepository.findById(id);
     }
 
-    public Order addOrder(Order order) {
+    public CustomerOrder addOrder(CustomerOrder order) {
         return orderRepository.save(order);
     }
 
-    public Order updateOrderStatus(Long id, String status) {
-        Optional<Order> orderOptional = orderRepository.findById(id);
+    public CustomerOrder updateOrderStatus(Long id, String status) {
+        Optional<CustomerOrder> orderOptional = orderRepository.findById(id);
         if (orderOptional.isPresent()) {
-            Order order = orderOptional.get();
+            CustomerOrder order = orderOptional.get();
             order.setStatus(status);
             return orderRepository.save(order);
         }

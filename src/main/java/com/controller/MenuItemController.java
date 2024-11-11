@@ -1,9 +1,9 @@
-package controller;
+package com.controller;
 
-import model.MenuItem;
+import com.model.MenuItem;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import service.MenuItemService;
+import com.service.MenuItemService;
 
 import java.util.List;
 import java.util.Optional;
