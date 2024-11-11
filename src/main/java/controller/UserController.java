@@ -56,4 +56,17 @@ public class UserController {
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
     }
+    @PostMapping("/login")
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody UserRegistrationDTO authenticationRequest) {
+        try {
+            authenticationManager.authenticate(
+                    new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword())
+            );
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect username or password");
+        }
+
+        final String jwt = jwtTokenUtil.generateToken(authenticationRequest.getUsername());
+        return ResponseEntity.ok(new JwtResponse(jwt));
+    }
 }
