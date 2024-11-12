@@ -1,9 +1,10 @@
 package com.service;
 
-import com.model.AppUser; // Correct gebruik van AppUser, niet User
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
+import com.model.AppUser;
 import com.repository.AppUserRepository;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;  // Import PasswordEncoder, not BCryptPasswordEncoder
+import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,6 +15,9 @@ public class UserService {
     @Autowired
     private AppUserRepository userRepository;
 
+    @Autowired
+    private PasswordEncoder passwordEncoder;  // Use PasswordEncoder interface
+
     public List<AppUser> getAllUsers() {
         return userRepository.findAll();
     }
@@ -23,6 +27,8 @@ public class UserService {
     }
 
     public AppUser addUser(AppUser user) {
+        // Encrypt the password before saving the user
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         return userRepository.save(user);
     }
 
@@ -31,11 +37,12 @@ public class UserService {
         if (userOptional.isPresent()) {
             AppUser user = userOptional.get();
             user.setUsername(userDetails.getUsername());
-            user.setPassword(userDetails.getPassword());
+            // Encrypt the password before updating
+            user.setPassword(passwordEncoder.encode(userDetails.getPassword()));
             user.setRole(userDetails.getRole());
             return userRepository.save(user);
         }
-        return null; // Hier kun je overwegen een exception te gooien als de gebruiker niet wordt gevonden.
+        return null;
     }
 
     public void deleteUser(Long id) {
@@ -44,5 +51,9 @@ public class UserService {
 
     public boolean userExists(String username) {
         return userRepository.findByUsername(username).isPresent();
+    }
+
+    public Optional<AppUser> getUserByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }

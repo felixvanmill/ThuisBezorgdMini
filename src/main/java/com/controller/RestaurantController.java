@@ -1,37 +1,27 @@
 package com.controller;
 
-import com.model.Restaurant;
+import com.model.CustomerOrder;
+import com.repository.CustomerOrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-import com.service.RestaurantService;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/api/restaurants")
 public class RestaurantController {
 
     @Autowired
-    private RestaurantService restaurantService;
+    private CustomerOrderRepository customerOrderRepository;
 
-    @GetMapping
-    public List<Restaurant> getAllRestaurants() {
-        return restaurantService.getAllRestaurants();
+    @GetMapping("/orders")
+    public List<CustomerOrder> getOrders() {
+        return customerOrderRepository.findAll();  // Restaurant employees can view all orders
     }
 
-    @GetMapping("/{id}")
-    public Optional<Restaurant> getRestaurantById(@PathVariable Long id) {
-        return restaurantService.getRestaurantById(id);
-    }
-
-    @PostMapping
-    public Restaurant addRestaurant(@RequestBody Restaurant restaurant) {
-        return restaurantService.addRestaurant(restaurant);
-    }
-
-    @DeleteMapping("/{id}")
-    public void deleteRestaurant(@PathVariable Long id) {
-        restaurantService.deleteRestaurant(id);
+    @PostMapping("/updateOrderStatus")
+    public String updateOrderStatus(@RequestBody CustomerOrder order) {
+        customerOrderRepository.save(order);
+        return "Order status updated!";
     }
 }

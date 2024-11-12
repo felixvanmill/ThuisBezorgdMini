@@ -30,20 +30,23 @@ public class CustomerOrder {
     private String status;
     private double totalPrice;
 
+    // New field for delivery person username
+    private String deliveryPersonUsername;
 
     // Constructors
     public CustomerOrder() {
     }
 
-    public CustomerOrder(AppUser user, List<MenuItem> menuItems, Address address, String status, double totalPrice) {
+    public CustomerOrder(AppUser user, List<MenuItem> menuItems, Address address, String status, double totalPrice, String deliveryPersonUsername) {
         this.user = user;
         this.menuItems = menuItems;
         this.address = address;
         this.status = status;
         this.totalPrice = totalPrice;
+        this.deliveryPersonUsername = deliveryPersonUsername;
     }
 
-    // Getters en Setters
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -90,5 +93,13 @@ public class CustomerOrder {
 
     public void setTotalPrice(double totalPrice) {
         this.totalPrice = totalPrice;
+    }
+
+    public String getDeliveryPersonUsername() {
+        return deliveryPersonUsername;
+    }
+
+    public void setDeliveryPersonUsername(String deliveryPersonUsername) {
+        this.deliveryPersonUsername = deliveryPersonUsername;
     }
 }
