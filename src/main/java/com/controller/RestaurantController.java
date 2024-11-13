@@ -7,6 +7,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+
 
 import java.util.List;
 
@@ -23,6 +26,12 @@ public class RestaurantController {
     // Serve the restaurant home page as an HTML view
     @GetMapping("/home")
     public String restaurantHome(Model model) {
+        // Retrieve authenticated user details
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        // Add the username to the model
+        model.addAttribute("username", username);
         model.addAttribute("welcomeMessage", "Welcome to your restaurant home page!");
         return "restaurant/restaurant"; // Maps to templates/restaurant/restaurant.html
     }

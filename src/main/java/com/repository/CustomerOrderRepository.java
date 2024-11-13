@@ -9,9 +9,11 @@ import java.util.List;
 @Repository
 public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Long> {
 
-    // Existing methods
-    List<CustomerOrder> findByDeliveryPersonUsername(String username);
+    // Method to find orders by user username
     List<CustomerOrder> findByUser_Username(String username);
+
+    // Method to find orders by status, for example, for querying ASSIGNED or DELIVERED orders
+    List<CustomerOrder> findByStatus(String status);
 
     // New method for querying by restaurantId
     List<CustomerOrder> findByRestaurant_Id(Long restaurantId);

@@ -4,8 +4,7 @@
   <title>Customer Dashboard</title>
 </head>
 <body>
-<h1>Welcome to your dashboard, <span th:text="${username}">Customer</span>!</h1>
-<p>Available Restaurants:</p>
-<!-- Add dynamic restaurant list and other customer-specific actions -->
+<h1 th:text="${welcomeMessage}">Welcome to the Customer Dashboard!</h1>
+<p><a th:href="@{/customer/restaurants}">View Available Restaurants</a></p>
 </body>
 </html>

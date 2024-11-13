@@ -6,6 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.List;
 
@@ -16,24 +18,31 @@ public class DeliveryController {
     @Autowired
     private CustomerOrderRepository customerOrderRepository;
 
-    // Serve the delivery home page as an HTML view
     @GetMapping("/home")
     public String deliveryHome(Model model) {
+        // Retrieve authenticated user details
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String username = authentication.getName();
+
+        // Add the username to the model
+        model.addAttribute("username", username);
         model.addAttribute("welcomeMessage", "Welcome to your delivery home page!");
         return "delivery/delivery"; // Maps to templates/delivery/delivery.html
     }
 
-    // Get assigned orders for the delivery person as JSON
+    // Get assigned orders with status "ASSIGNED"
     @GetMapping("/api/assignedOrders")
     @ResponseBody
-    public List<CustomerOrder> getAssignedOrders(@RequestParam String username) {
-        return customerOrderRepository.findByDeliveryPersonUsername(username);
+    public List<CustomerOrder> getAssignedOrders() {
+        return customerOrderRepository.findByStatus("ASSIGNED");
     }
 
     // Mark order as delivered (for API access)
     @PostMapping("/api/orders/markDelivered")
     @ResponseBody
-    public String markOrderAsDelivered(@RequestBody CustomerOrder order) {
+    public String markOrderAsDelivered(@RequestParam Long orderId) {
+        CustomerOrder order = customerOrderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
         order.setStatus("DELIVERED");
         customerOrderRepository.save(order);
         return "Order marked as delivered!";
@@ -42,11 +51,11 @@ public class DeliveryController {
     // Assign an order to a delivery person (for API access)
     @PostMapping("/api/orders/assign")
     @ResponseBody
-    public String assignOrderToDelivery(@RequestParam Long orderId, @RequestParam String deliveryUsername) {
-        CustomerOrder order = customerOrderRepository.findById(orderId).orElseThrow();
-        order.setDeliveryPersonUsername(deliveryUsername);
+    public String assignOrderToDelivery(@RequestParam Long orderId) {
+        CustomerOrder order = customerOrderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
         order.setStatus("ASSIGNED");
         customerOrderRepository.save(order);
-        return "Order assigned to " + deliveryUsername;
+        return "Order assigned successfully!";
     }
 }

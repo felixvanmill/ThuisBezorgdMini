@@ -2,6 +2,7 @@ package com.model;
 
 import jakarta.persistence.*;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "customer_order")
@@ -11,17 +12,17 @@ public class CustomerOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    // Unique order number field
+    @Column(name = "order_number", unique = true, nullable = false)
+    private String orderNumber;
+
     @ManyToOne
     @JoinColumn(name = "user_id")
     private AppUser user;
 
-    @ManyToMany
-    @JoinTable(
-            name = "customer_order_menu_item",
-            joinColumns = @JoinColumn(name = "customer_order_id"),
-            inverseJoinColumns = @JoinColumn(name = "menu_item_id")
-    )
-    private List<MenuItem> menuItems;
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @JoinColumn(name = "customer_order_id")
+    private List<OrderItem> orderItems;
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
@@ -32,29 +33,50 @@ public class CustomerOrder {
     private Restaurant restaurant;
 
     private String status;
-    private double totalPrice;
-    private String deliveryPersonUsername;
 
-    // Constructors, getters, and setters
+    @Column(name = "total_price")
+    private double totalPrice;
+
+    // Default constructor that generates a unique order number
     public CustomerOrder() {
+        this.orderNumber = generateOrderNumber();
     }
 
-    public CustomerOrder(AppUser user, List<MenuItem> menuItems, Address address, String status, double totalPrice, String deliveryPersonUsername, Restaurant restaurant) {
+    // Constructor to initialize all fields, including totalPrice
+// CustomerOrder.java
+
+    public CustomerOrder(AppUser user, List<OrderItem> orderItems, Address address, String status, double totalPrice, Restaurant restaurant) {
+        this.orderNumber = generateOrderNumber();  // Ensure order number is generated
         this.user = user;
-        this.menuItems = menuItems;
+        this.orderItems = orderItems;
         this.address = address;
         this.status = status;
         this.totalPrice = totalPrice;
-        this.deliveryPersonUsername = deliveryPersonUsername;
         this.restaurant = restaurant;
     }
+
+
+    // Method to generate a unique order number
+    private String generateOrderNumber() {
+        return "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+
+    public double calculateTotalPrice() {
+        return orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
+    }
+
+    // Getters and setters
 
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public String getOrderNumber() {
+        return orderNumber;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
     }
 
     public AppUser getUser() {
@@ -65,12 +87,19 @@ public class CustomerOrder {
         this.user = user;
     }
 
-    public List<MenuItem> getMenuItems() {
-        return menuItems;
+    public List<OrderItem> getOrderItems() {
+        return orderItems;
     }
 
-    public void setMenuItems(List<MenuItem> menuItems) {
-        this.menuItems = menuItems;
+    public void setOrderItems(List<OrderItem> orderItems) {
+        orderItems.forEach(item -> item.setOrderNumber(this.orderNumber));
+        this.orderItems = orderItems;
+        this.totalPrice = calculateTotalPrice();
+    }
+
+
+    public double getTotalPrice() {
+        return totalPrice;
     }
 
     public Address getAddress() {
@@ -81,14 +110,6 @@ public class CustomerOrder {
         this.address = address;
     }
 
-    public Restaurant getRestaurant() {
-        return restaurant;
-    }
-
-    public void setRestaurant(Restaurant restaurant) {
-        this.restaurant = restaurant;
-    }
-
     public String getStatus() {
         return status;
     }
@@ -97,19 +118,11 @@ public class CustomerOrder {
         this.status = status;
     }
 
-    public double getTotalPrice() {
-        return totalPrice;
+    public Restaurant getRestaurant() {
+        return restaurant;
     }
 
-    public void setTotalPrice(double totalPrice) {
-        this.totalPrice = totalPrice;
-    }
-
-    public String getDeliveryPersonUsername() {
-        return deliveryPersonUsername;
-    }
-
-    public void setDeliveryPersonUsername(String deliveryPersonUsername) {
-        this.deliveryPersonUsername = deliveryPersonUsername;
+    public void setRestaurant(Restaurant restaurant) {
+        this.restaurant = restaurant;
     }
 }

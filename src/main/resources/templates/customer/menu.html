@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>Menu</title>
+</head>
+<body>
+<h1>Menu for <span th:text="${restaurantName}">Restaurant</span></h1>
+
+<!-- Correctly inject restaurantId and set up the form action -->
+<form th:action="@{/customer/restaurant/{restaurantId}/order(restaurantId=${restaurantId})}" method="post">
+  <div th:each="menuItem : ${menuItems}">
+    <p th:text="${menuItem.name}">Menu Item</p>
+    <p>Price: <span th:text="${menuItem.price}">0.00</span></p>
+    <label>Quantity:</label>
+    <!-- Correct name format for menuItemQuantities -->
+    <input type="number" th:name="'menuItemQuantities[' + ${menuItem.id} + ']'" min="0" value="0" />
+  </div>
+  <button type="submit">Place Order</button>
+</form>
+
+</body>
+</html>
