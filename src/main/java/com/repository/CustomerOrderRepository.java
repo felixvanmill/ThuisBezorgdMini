@@ -9,9 +9,10 @@ import java.util.List;
 @Repository
 public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Long> {
 
-    // Custom query for finding by delivery person's username (no change needed here)
+    // Existing methods
     List<CustomerOrder> findByDeliveryPersonUsername(String username);
+    List<CustomerOrder> findByUser_Username(String username);
 
-    // Adjusting this method to refer to 'user.username' using the underscore syntax for nested properties
-    List<CustomerOrder> findByUser_Username(String username);  // Updated query method
+    // New method for querying by restaurantId
+    List<CustomerOrder> findByRestaurant_Id(Long restaurantId);
 }

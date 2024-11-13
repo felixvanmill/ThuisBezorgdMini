@@ -12,7 +12,7 @@ import com.repository.MenuItemRepository;
 import com.repository.RestaurantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.security.crypto.password.PasswordEncoder; // Import PasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
 import java.util.Arrays;
@@ -36,7 +36,7 @@ public class DataInitializer implements CommandLineRunner {
     private AddressRepository addressRepository;
 
     @Autowired
-    private PasswordEncoder passwordEncoder;  // Inject PasswordEncoder
+    private PasswordEncoder passwordEncoder;
 
     @Override
     public void run(String... args) throws Exception {
@@ -63,14 +63,14 @@ public class DataInitializer implements CommandLineRunner {
         Address address1 = new Address("Customer Lane", "123", "12345", "City");
         Address address2 = new Address("Another St", "456", "67890", "City");
 
-        // Create orders, associating them with the previously created addresses and adding deliveryPersonUsername
-        CustomerOrder order1 = new CustomerOrder(user1, Arrays.asList(pizza1, pizza2), address1, "PENDING", 21.98, "alexjohnson");
-        CustomerOrder order2 = new CustomerOrder(user1, Arrays.asList(sushi1, sushi2), address2, "DELIVERED", 19.98, "alexjohnson");
+        // Create orders, associating them with the previously created addresses, restaurants, and delivery person
+        CustomerOrder order1 = new CustomerOrder(user1, Arrays.asList(pizza1, pizza2), address1, "PENDING", 21.98, "alexjohnson", restaurant1);
+        CustomerOrder order2 = new CustomerOrder(user1, Arrays.asList(sushi1, sushi2), address2, "DELIVERED", 19.98, "alexjohnson", restaurant2);
 
         // Save orders (addresses will be saved automatically due to cascading)
         customerOrderRepository.saveAll(Arrays.asList(order1, order2));
 
         // Log success message
-        System.out.println("Sample data successfully added with encrypted passwords!");
+        System.out.println("Sample data successfully added with encrypted passwords and restaurant associations!");
     }
 }

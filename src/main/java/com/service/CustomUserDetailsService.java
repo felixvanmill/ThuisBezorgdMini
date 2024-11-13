@@ -3,6 +3,7 @@ package com.service;
 import com.model.AppUser;
 import com.repository.AppUserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -23,11 +24,13 @@ public class CustomUserDetailsService implements UserDetailsService {
         AppUser user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        // Wrap AppUser in a Spring Security User object, mapping role to authorities
+        // Prefix the role with "ROLE_" to match Spring Security conventions
+        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole());
+
         return new User(
                 user.getUsername(),
                 user.getPassword(),
-                Collections.singletonList(new SimpleGrantedAuthority(user.getRole())) // Convert role to GrantedAuthority
+                Collections.singleton(authority)
         );
     }
 }

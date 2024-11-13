@@ -27,15 +27,22 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/admin/**").hasRole("ADMIN")
-                        .requestMatchers("/user/**").hasRole("USER")
+                        .requestMatchers("/api/customer/restaurants", "/error").permitAll()
+                        .requestMatchers("/customer/**").hasRole("CUSTOMER")
+                        .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE")
+                        .requestMatchers("/delivery/**").hasRole("DELIVERY_PERSON")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .defaultSuccessUrl("/greeting", true)
+                        .permitAll()
+                        .defaultSuccessUrl("/dashboard", true)  // Redirects to /dashboard after login
+                )
+                .logout(logout -> logout
+                        .logoutUrl("/logout")
+                        .logoutSuccessUrl("/")
                         .permitAll()
                 )
-                .httpBasic(withDefaults());  // Use withDefaults() for default basic auth config
+                .httpBasic(withDefaults());
 
         return http.build();
     }

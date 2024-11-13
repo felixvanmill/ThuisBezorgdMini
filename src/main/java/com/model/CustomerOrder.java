@@ -23,30 +23,32 @@ public class CustomerOrder {
     )
     private List<MenuItem> menuItems;
 
-    @OneToOne(cascade = CascadeType.ALL)  // CascadeType.ALL ensures the Address is persisted as part of the CustomerOrder
+    @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     private Address address;
 
+    @ManyToOne
+    @JoinColumn(name = "restaurant_id")
+    private Restaurant restaurant;
+
     private String status;
     private double totalPrice;
-
-    // New field for delivery person username
     private String deliveryPersonUsername;
 
-    // Constructors
+    // Constructors, getters, and setters
     public CustomerOrder() {
     }
 
-    public CustomerOrder(AppUser user, List<MenuItem> menuItems, Address address, String status, double totalPrice, String deliveryPersonUsername) {
+    public CustomerOrder(AppUser user, List<MenuItem> menuItems, Address address, String status, double totalPrice, String deliveryPersonUsername, Restaurant restaurant) {
         this.user = user;
         this.menuItems = menuItems;
         this.address = address;
         this.status = status;
         this.totalPrice = totalPrice;
         this.deliveryPersonUsername = deliveryPersonUsername;
+        this.restaurant = restaurant;
     }
 
-    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -77,6 +79,14 @@ public class CustomerOrder {
 
     public void setAddress(Address address) {
         this.address = address;
+    }
+
+    public Restaurant getRestaurant() {
+        return restaurant;
+    }
+
+    public void setRestaurant(Restaurant restaurant) {
+        this.restaurant = restaurant;
     }
 
     public String getStatus() {
