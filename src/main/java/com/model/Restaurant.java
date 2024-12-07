@@ -16,9 +16,11 @@ public class Restaurant {
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL)
     private List<MenuItem> menuItems;
 
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL)
+    private List<AppUser> employees; // New field for employees
+
     // Constructors
-    public Restaurant() {
-    }
+    public Restaurant() {}
 
     public Restaurant(String name, String description, String location) {
         this.name = name;
@@ -26,7 +28,7 @@ public class Restaurant {
         this.location = location;
     }
 
-    // Getters en Setters
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -65,5 +67,13 @@ public class Restaurant {
 
     public void setMenuItems(List<MenuItem> menuItems) {
         this.menuItems = menuItems;
+    }
+
+    public List<AppUser> getEmployees() {
+        return employees;
+    }
+
+    public void setEmployees(List<AppUser> employees) {
+        this.employees = employees;
     }
 }
