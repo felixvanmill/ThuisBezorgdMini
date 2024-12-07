@@ -4,8 +4,41 @@
   <title>Restaurant Dashboard</title>
 </head>
 <body>
-<h1>Welcome to your dashboard, <span th:text="${username}">Restaurant Employee</span>!</h1>
-<p>Manage Menu Items and View Orders:</p>
-<!-- Add dynamic menu item list and orders list -->
+<h1>Welcome, <span th:text="${username}">Restaurant Employee</span>!</h1>
+<p>You are managing: <strong><span th:text="${restaurantName}">Restaurant Name</span></strong></p>
+<p>Manage Orders:</p>
+
+<table border="1">
+  <thead>
+  <tr>
+    <th>Order Number</th>
+    <th>Status</th>
+    <th>Total Price</th>
+    <th>Actions</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="order : ${orders}">
+    <!-- Make Order Number Clickable -->
+    <td>
+      <a th:href="@{/restaurant/orders/{orderId}/details(orderId=${order.id})}" th:text="${order.orderNumber}">Order Number</a>
+    </td>
+    <td th:text="${order.status}">Status</td>
+    <td th:text="${order.totalPrice}">Total Price</td>
+    <td>
+      <form th:action="@{/restaurant/orders/{orderId}/updateStatus(orderId=${order.id})}" method="post">
+        <select name="status">
+          <option value="CONFIRMED">Confirm</option>
+          <option value="IN KITCHEN">In Kitchen</option>
+          <option value="READY FOR DELIVERY">Ready for Delivery</option>
+        </select>
+        <button type="submit">Update</button>
+      </form>
+    </td>
+  </tr>
+  </tbody>
+</table>
+
+<a href="/logout">Logout</a>
 </body>
 </html>

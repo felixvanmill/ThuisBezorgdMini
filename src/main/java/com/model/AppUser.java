@@ -10,31 +10,43 @@ public class AppUser {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private String username;
-    private String password;
-    private String role;
-    private String fullName;  // Nieuw veld voor volledige naam
+    @Column(nullable = false, unique = true)
+    private String username; // Ensure usernames are unique
 
-    // Bestaande constructor
+    @Column(nullable = false)
+    private String password;
+
+    @Column(nullable = false)
+    private String role; // Role can be CUSTOMER, RESTAURANT_EMPLOYEE, DELIVERY_PERSON
+
+    private String fullName;
+
+    @ManyToOne
+    @JoinColumn(name = "restaurant_id") // Foreign key to the restaurant
+    private Restaurant restaurant; // Association to a restaurant (for employees)
+
+    // Default constructor
     public AppUser() {
     }
 
-    // Bestaande constructor met drie argumenten
-    public AppUser(String username, String password, String role) {
-        this.username = username;
-        this.password = password;
-        this.role = role;
-    }
-
-    // Nieuwe constructor met vier argumenten
+    // Constructor for creating a user without a restaurant association
     public AppUser(String username, String password, String role, String fullName) {
         this.username = username;
         this.password = password;
         this.role = role;
-        this.fullName = fullName; // Stel de volledige naam in
+        this.fullName = fullName;
     }
 
-    // Getters en Setters
+    // Constructor for creating a user with a restaurant association
+    public AppUser(String username, String password, String role, String fullName, Restaurant restaurant) {
+        this.username = username;
+        this.password = password;
+        this.role = role;
+        this.fullName = fullName;
+        this.restaurant = restaurant;
+    }
+
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -73,5 +85,13 @@ public class AppUser {
 
     public void setFullName(String fullName) {
         this.fullName = fullName;
+    }
+
+    public Restaurant getRestaurant() {
+        return restaurant;
+    }
+
+    public void setRestaurant(Restaurant restaurant) {
+        this.restaurant = restaurant;
     }
 }
