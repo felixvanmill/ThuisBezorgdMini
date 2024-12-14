@@ -27,8 +27,13 @@
     <td th:text="${item.totalPrice}">Total</td>
   </tr>
   </tbody>
+  <tfoot th:if="${#lists.isEmpty(items)}">
+  <tr>
+    <td colspan="4">No items found for this order.</td>
+  </tr>
+  </tfoot>
 </table>
 
-<a href="/restaurant/home">Back to Restaurant Dashboard</a>
+<a th:href="@{/restaurant/{slug}/management(slug=${order.restaurant.slug})}">Back to Restaurant Dashboard</a>
 </body>
 </html>

@@ -2,20 +2,73 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <title>Menu</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    table th, table td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    table th {
+      background-color: #f4f4f4;
+      color: #333;
+    }
+    .quantity-input {
+      width: 60px;
+    }
+    .place-order-btn {
+      margin-top: 20px;
+      display: block;
+      width: 100%;
+      padding: 10px;
+      background-color: #007bff;
+      color: white;
+      border: none;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    .place-order-btn:hover {
+      background-color: #0056b3;
+    }
+  </style>
 </head>
 <body>
 <h1>Menu for <span th:text="${restaurantName}">Restaurant</span></h1>
 
-<!-- Correctly inject restaurantId and set up the form action -->
-<form th:action="@{/customer/restaurant/{restaurantId}/order(restaurantId=${restaurantId})}" method="post">
-  <div th:each="menuItem : ${menuItems}">
-    <p th:text="${menuItem.name}">Menu Item</p>
-    <p>Price: <span th:text="${menuItem.price}">0.00</span></p>
-    <label>Quantity:</label>
-    <!-- Correct name format for menuItemQuantities -->
-    <input type="number" th:name="'menuItemQuantities[' + ${menuItem.id} + ']'" min="0" value="0" />
-  </div>
-  <button type="submit">Place Order</button>
+<form th:action="@{/customer/restaurant/{slug}/order(slug=${restaurantSlug})}" method="post">
+  <table>
+    <thead>
+    <tr>
+      <th>Item Name</th>
+      <th>Description</th>
+      <th>Price</th>
+      <th>Quantity</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="menuItem : ${menuItems}">
+      <td th:text="${menuItem.name}">Item Name</td>
+      <td th:text="${menuItem.description}">Description</td>
+      <td th:text="'$' + ${menuItem.price}">Price</td>
+      <td>
+        <input type="number" th:name="'menuItemQuantities[' + ${menuItem.id} + ']'" min="0" value="0" class="quantity-input" />
+      </td>
+    </tr>
+    </tbody>
+  </table>
+  <button type="submit" class="place-order-btn">Place Order</button>
 </form>
 
 </body>

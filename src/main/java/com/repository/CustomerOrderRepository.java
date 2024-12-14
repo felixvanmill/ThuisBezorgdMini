@@ -25,4 +25,10 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
 
     @Query("SELECT o FROM CustomerOrder o LEFT JOIN FETCH o.orderItems WHERE o.id = :id")
     Optional<CustomerOrder> findByIdWithItems(@Param("id") Long id);
+
+    Optional<CustomerOrder> findByIdAndRestaurant_Id(Long id, Long restaurantId);
+
+    // Fetch order with items by orderNumber
+    @Query("SELECT o FROM CustomerOrder o LEFT JOIN FETCH o.orderItems WHERE o.orderNumber = :orderNumber")
+    Optional<CustomerOrder> findByOrderNumberWithItems(@Param("orderNumber") String orderNumber);
 }

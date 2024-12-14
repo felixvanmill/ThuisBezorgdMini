@@ -55,20 +55,34 @@ public class CustomerController {
         return "customer/restaurants";  // Renders the restaurant selection view
     }
 
-    // Show menu items for a specific restaurant
-    @GetMapping("/restaurant/{restaurantId}/menu")
-    public String getMenuItems(@PathVariable Long restaurantId, Model model) {
-        List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurantId);
+    // Show menu items for a specific restaurant by slug
+    @GetMapping("/restaurant/{slug}/menu")
+    public String getMenuItemsBySlug(@PathVariable String slug, Model model) {
+        // Find restaurant by slug
+        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+
+        // Fetch menu items for the restaurant
+        List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
+
+        // Add attributes to model
         model.addAttribute("menuItems", menuItems);
-        model.addAttribute("restaurantId", restaurantId);
-        model.addAttribute("restaurantName", restaurantRepository.findById(restaurantId).orElse(new Restaurant()).getName());
+        model.addAttribute("restaurantId", restaurant.getId());
+        model.addAttribute("restaurantName", restaurant.getName());
+        model.addAttribute("restaurantSlug", restaurant.getSlug()); // Add slug to model
+
         return "customer/menu";  // Renders the menu view
     }
 
-    @PostMapping("/restaurant/{restaurantId}/order")
-    public String submitOrder(@PathVariable Long restaurantId,
+
+    @PostMapping("/restaurant/{slug}/order")
+    public String submitOrder(@PathVariable String slug,
                               @RequestParam Map<String, String> menuItemQuantities,
                               Model model) {
+        // Find the restaurant by slug
+        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+
         // Authentication and user retrieval
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
@@ -97,7 +111,7 @@ public class CustomerController {
         double totalPrice = orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
 
         // Create and save the new order with totalPrice included in the constructor
-        CustomerOrder newOrder = new CustomerOrder(customer, orderItems, new Address(), "UNCONFIRMED", totalPrice, restaurantRepository.findById(restaurantId).orElseThrow());
+        CustomerOrder newOrder = new CustomerOrder(customer, orderItems, new Address(), "UNCONFIRMED", totalPrice, restaurant);
 
         // Set order number for each OrderItem
         orderItems.forEach(orderItem -> orderItem.setOrderNumber(newOrder.getOrderNumber()));
@@ -108,8 +122,9 @@ public class CustomerController {
         model.addAttribute("orderNumber", newOrder.getOrderNumber());
         model.addAttribute("message", "Your order has been placed successfully!");
         model.addAttribute("totalPrice", totalPrice);
-        model.addAttribute("restaurantName", newOrder.getRestaurant().getName());
+        model.addAttribute("restaurantName", restaurant.getName());
 
         return "customer/orderConfirmation";  // Confirmation view after placing order
     }
+
 }

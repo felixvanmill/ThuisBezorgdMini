@@ -17,9 +17,11 @@ import static org.springframework.security.config.Customizer.withDefaults;
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    private final CustomLoginSuccessHandler customLoginSuccessHandler;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService, CustomLoginSuccessHandler customLoginSuccessHandler) {
         this.userDetailsService = userDetailsService;
+        this.customLoginSuccessHandler = customLoginSuccessHandler;
     }
 
     @Bean
@@ -35,7 +37,7 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form
                         .permitAll()
-                        .defaultSuccessUrl("/dashboard", true)  // Redirects to /dashboard after login
+                        .successHandler(customLoginSuccessHandler)  // Use the custom handler
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
@@ -59,3 +61,4 @@ public class SecurityConfig {
         return authManagerBuilder.build();
     }
 }
+

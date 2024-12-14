@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
-  <title>Restaurant Dashboard</title>
+  <title>Restaurant Management Dashboard</title>
 </head>
 <body>
 <h1>Welcome, <span th:text="${username}">Restaurant Employee</span>!</h1>
@@ -19,26 +19,33 @@
   </thead>
   <tbody>
   <tr th:each="order : ${orders}">
-    <!-- Make Order Number Clickable -->
     <td>
-      <a th:href="@{/restaurant/orders/{orderId}/details(orderId=${order.id})}" th:text="${order.orderNumber}">Order Number</a>
+      <a th:href="@{/restaurant/{slug}/orders/{orderNumber}/details(slug=${slug}, orderNumber=${order.orderNumber})}"
+         th:text="${order.orderNumber}">Order Number</a>
     </td>
     <td th:text="${order.status}">Status</td>
     <td th:text="${order.totalPrice}">Total Price</td>
     <td>
-      <form th:action="@{/restaurant/orders/{orderId}/updateStatus(orderId=${order.id})}" method="post">
+      <form th:action="@{/restaurant/{slug}/orders/{orderId}/updateStatus(slug=${slug}, orderId=${order.id})}" method="post">
         <select name="status">
-          <option value="CONFIRMED">Confirm</option>
-          <option value="IN KITCHEN">In Kitchen</option>
-          <option value="READY FOR DELIVERY">Ready for Delivery</option>
+          <option value="" disabled selected>Select Status</option>
+          <option value="CONFIRMED" th:selected="${order.status == 'CONFIRMED'}">Confirm</option>
+          <option value="IN KITCHEN" th:selected="${order.status == 'IN KITCHEN'}">In Kitchen</option>
+          <option value="READY FOR DELIVERY" th:selected="${order.status == 'READY FOR DELIVERY'}">Ready for Delivery</option>
         </select>
         <button type="submit">Update</button>
       </form>
     </td>
   </tr>
   </tbody>
+  <tfoot th:if="${#lists.isEmpty(orders)}">
+  <tr>
+    <td colspan="4">No orders found for this restaurant.</td>
+  </tr>
+  </tfoot>
 </table>
 
+<p><a th:href="@{/restaurant/{slug}/menu/upload(slug=${slug})}">Upload Menu Items</a></p>
 <a href="/logout">Logout</a>
 </body>
 </html>

@@ -13,11 +13,14 @@ public class Restaurant {
     private String description;
     private String location;
 
+    @Column(unique = true, nullable = false)
+    private String slug; // New field for URL-friendly name
+
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL)
     private List<MenuItem> menuItems;
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL)
-    private List<AppUser> employees; // New field for employees
+    private List<AppUser> employees;
 
     // Constructors
     public Restaurant() {}
@@ -26,31 +29,39 @@ public class Restaurant {
         this.name = name;
         this.description = description;
         this.location = location;
+        this.slug = generateSlug(name); // Automatically generate slug
     }
 
-    // Getters and Setters
+    // Slug generation logic
+    private String generateSlug(String name) {
+        return name.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("-$", "");
+    }
+
+    public void setName(String name) {
+        this.name = name;
+        this.slug = generateSlug(name); // Update slug when name changes
+    }
+
+    // Getters and setters
+
     public Long getId() {
         return id;
     }
 
-    public void setId(Long id) {
-        this.id = id;
+    public String getSlug() {
+        return slug;
     }
 
     public String getName() {
         return name;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public String getDescription() {
         return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public String getLocation() {

@@ -2,15 +2,64 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
   <title>Select Restaurant</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    ul {
+      list-style-type: none;
+      padding: 0;
+      max-width: 400px;
+      margin: 20px auto;
+    }
+    li {
+      margin: 10px 0;
+    }
+    a {
+      display: block;
+      padding: 10px 15px;
+      background-color: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      text-decoration: none;
+      color: #007bff;
+      text-align: center;
+      font-size: 16px;
+    }
+    a:hover {
+      background-color: #e6f0ff;
+      color: #0056b3;
+    }
+    .no-restaurants {
+      text-align: center;
+      color: #777;
+      font-size: 18px;
+    }
+  </style>
 </head>
 <body>
-<h1>Select a Restaurant</h1>
-<ul>
-  <li th:each="restaurant : ${restaurants}">
-    <a th:href="@{/customer/restaurant/{id}/menu(id=${restaurant.id})}">
-      <span th:text="${restaurant.name}"></span>
-    </a>
-  </li>
-</ul>
+<section aria-labelledby="restaurant-list-heading">
+  <h1 id="restaurant-list-heading">Select a Restaurant</h1>
+
+  <ul th:if="${!#lists.isEmpty(restaurants)}">
+    <li th:each="restaurant : ${restaurants}">
+      <a th:href="@{/customer/restaurant/{slug}/menu(slug=${restaurant.slug})}"
+         th:title="'Go to menu of ' + ${restaurant.name}"
+         th:aria-label="'Go to menu of ' + ${restaurant.name}"
+         th:text="${restaurant.name}">
+        Restaurant Name
+      </a>
+    </li>
+  </ul>
+
+  <p class="no-restaurants" th:if="${#lists.isEmpty(restaurants)}">
+    No restaurants available at the moment. Please check back later or contact support for assistance.
+  </p>
+</section>
 </body>
 </html>

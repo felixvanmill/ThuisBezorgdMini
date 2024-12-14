@@ -42,7 +42,7 @@ public class DataInitializer implements CommandLineRunner {
 
         appUserRepository.saveAll(Arrays.asList(user1, restaurantEmployee1, restaurantEmployee2, deliveryPerson));
 
-        // Create and save restaurants
+        // Create and save restaurants (slugs are generated automatically)
         Restaurant restaurant1 = new Restaurant("Pizza Place", "Pizzeria specializing in Italian dishes", "123 Main St, City");
         Restaurant restaurant2 = new Restaurant("Sushi World", "Authentic Japanese restaurant with fresh sushi", "456 Ocean Ave, City");
         restaurantRepository.saveAll(Arrays.asList(restaurant1, restaurant2));
@@ -84,6 +84,6 @@ public class DataInitializer implements CommandLineRunner {
         customerOrderRepository.saveAll(Arrays.asList(order1, order2));
 
         // Log success message
-        System.out.println("Sample data successfully added with encrypted passwords, restaurant associations, order numbers, and item quantities!");
+        System.out.println("Sample data successfully added with encrypted passwords, restaurant associations, order numbers, slugs, and item quantities!");
     }
 }
