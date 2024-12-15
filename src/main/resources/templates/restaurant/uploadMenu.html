@@ -10,12 +10,14 @@
 <p th:if="${success}" style="color:green;" th:text="${success}"></p>
 <p th:if="${error}" style="color:red;" th:text="${error}"></p>
 
-<form th:action="@{/restaurant/menu/upload}" method="post" enctype="multipart/form-data">
+<!-- Include slug in the form action -->
+<form th:action="@{/restaurant/{slug}/menu/upload(slug=${slug})}" method="post" enctype="multipart/form-data">
     <label for="file">Select CSV File:</label>
     <input type="file" id="file" name="file" accept=".csv" required>
     <button type="submit">Upload</button>
 </form>
 
-<a href="/restaurant/home">Back to Dashboard</a>
+<!-- Back to dashboard link includes the slug -->
+<a th:href="@{/restaurant/{slug}/management(slug=${slug})}">Back to Dashboard</a>
 </body>
 </html>

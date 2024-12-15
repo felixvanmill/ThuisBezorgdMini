@@ -64,7 +64,7 @@ public class DataInitializer implements CommandLineRunner {
         Address address2 = new Address("Another St", "456", "67890", "City");
 
         // Create CustomerOrders with empty OrderItems
-        CustomerOrder order1 = new CustomerOrder(user1, new ArrayList<>(), address1, "PENDING", 0, restaurant1);
+        CustomerOrder order1 = new CustomerOrder(user1, new ArrayList<>(), address1, "READY FOR DELIVERY", 0, restaurant1);
         CustomerOrder order2 = new CustomerOrder(user1, new ArrayList<>(), address2, "DELIVERED", 0, restaurant2);
 
         // Save orders initially to generate order numbers

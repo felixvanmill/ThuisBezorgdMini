@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <title>All Orders</title>
+</head>
+<body>
+<h1>All Orders</h1>
+<p>Welcome, <span th:text="${username}">Delivery Person</span>!</p>
+
+<table border="1">
+  <thead>
+  <tr>
+    <th>Order Number</th>
+    <th>Restaurant</th>
+    <th>Delivery Address</th>
+    <th>Status</th>
+    <th>Actions</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="order : ${orders}">
+    <td th:text="${order.orderNumber}">Order Number</td>
+    <td th:text="${order.restaurant.name}">Restaurant Name</td>
+    <td th:text="${order.address.fullAddress}">Delivery Address</td>
+    <td th:text="${order.status}">Order Status</td>
+    <td>
+      <form th:action="@{/delivery/orders/{orderId}/updateStatus(orderId=${order.id})}" method="post">
+        <select name="status">
+          <option value="PICKING UP" th:selected="${order.status == 'PICKING UP'}">Picking Up</option>
+          <option value="TRANSPORT" th:selected="${order.status == 'TRANSPORT'}">Transport</option>
+          <option value="DELIVERED" th:selected="${order.status == 'DELIVERED'}">Delivered</option>
+        </select>
+        <button type="submit">Update</button>
+      </form>
+    </td>
+  </tr>
+  </tbody>
+</table>
+
+
+<a href="/logout">Logout</a>
+</body>
+</html>

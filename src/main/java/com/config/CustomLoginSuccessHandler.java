@@ -28,7 +28,7 @@ public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
                 redirectUrl = "/restaurant/management";
                 break;
             } else if (authority.getAuthority().equals("ROLE_DELIVERY_PERSON")) {
-                redirectUrl = "/delivery/home";
+                redirectUrl = "/delivery/allOrders";
                 break;
             }
         }

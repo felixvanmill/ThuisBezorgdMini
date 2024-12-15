@@ -64,4 +64,9 @@ public class Address {
     public void setCity(String city) {
         this.city = city;
     }
+
+    public String getFullAddress() {
+        return streetName + " " + houseNumber + ", " + postalCode + " " + city;
+    }
+
 }

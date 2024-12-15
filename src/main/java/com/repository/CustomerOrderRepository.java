@@ -12,23 +12,39 @@ import java.util.Optional;
 @Repository
 public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Long> {
 
-    // Method to find orders by user username
+    // Fetch orders by the user's username
     List<CustomerOrder> findByUser_Username(String username);
 
-    // Method to find orders by status, for example, for querying ASSIGNED or DELIVERED orders
+    // Fetch orders by status
     List<CustomerOrder> findByStatus(String status);
 
-    // New method for querying by restaurantId
+    // Fetch orders by restaurant ID
     List<CustomerOrder> findByRestaurant_Id(Long restaurantId);
 
-    List<CustomerOrder> findByRestaurant_IdAndStatus(Long restaurantId, String status); // Optional
+    // Fetch orders by restaurant ID and status
+    List<CustomerOrder> findByRestaurant_IdAndStatus(Long restaurantId, String status);
 
+    // Fetch order with items by ID
     @Query("SELECT o FROM CustomerOrder o LEFT JOIN FETCH o.orderItems WHERE o.id = :id")
     Optional<CustomerOrder> findByIdWithItems(@Param("id") Long id);
 
+    // Fetch order by ID and restaurant ID
     Optional<CustomerOrder> findByIdAndRestaurant_Id(Long id, Long restaurantId);
 
-    // Fetch order with items by orderNumber
+    // Fetch order with items by order number
     @Query("SELECT o FROM CustomerOrder o LEFT JOIN FETCH o.orderItems WHERE o.orderNumber = :orderNumber")
     Optional<CustomerOrder> findByOrderNumberWithItems(@Param("orderNumber") String orderNumber);
+
+    //For debugging
+    @Query("SELECT COUNT(o) FROM CustomerOrder o WHERE o.status = :status")
+    long countOrdersByStatus(@Param("status") String status);
+
+    @Query("SELECT o FROM CustomerOrder o " +
+            "LEFT JOIN FETCH o.orderItems i " +
+            "LEFT JOIN FETCH i.menuItem " +
+            "LEFT JOIN FETCH o.restaurant r " +
+            "LEFT JOIN FETCH o.address a " +
+            "WHERE o.status IN :statuses")
+    List<CustomerOrder> findByStatusesWithDetails(@Param("statuses") List<String> statuses);
+
 }

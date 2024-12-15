@@ -97,32 +97,50 @@ public class RestaurantController {
         return "restaurant/orderDetails"; // Render orderDetails.html
     }
 
-    // Update order status
-    @PostMapping("/orders/{orderId}/updateStatus")
-    public String updateOrderStatus(@PathVariable Long orderId, @RequestParam String status) {
+    // Update order status by slug and order ID
+    @PostMapping("/{slug}/orders/{orderId}/updateStatus")
+    public String updateOrderStatus(
+            @PathVariable String slug,
+            @PathVariable Long orderId,
+            @RequestParam String status) {
+        // Fetch the restaurant by slug
+        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+
+        // Fetch the order and ensure it belongs to the restaurant
         CustomerOrder order = customerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
+        if (!order.getRestaurant().getId().equals(restaurant.getId())) {
+            throw new RuntimeException("Order does not belong to the specified restaurant.");
+        }
+
+        // Update the status and save the order
         order.setStatus(status);
         customerOrderRepository.save(order);
 
-        return "redirect:/restaurant/management";
+        // Redirect back to the management page of the current restaurant
+        return "redirect:/restaurant/" + slug + "/management";
     }
 
-    // Serve file upload form
-    @GetMapping("/menu/upload")
-    public String uploadMenuForm(Model model) {
+
+    // Serve file upload form by slug
+    @GetMapping("/{slug}/menu/upload")
+    public String uploadMenuForm(@PathVariable String slug, Model model) {
         model.addAttribute("message", "Upload a CSV file to add new menu items.");
+        model.addAttribute("slug", slug); // Include slug for use in the form
         return "restaurant/uploadMenu";
     }
 
-    // Handle CSV upload
-    @PostMapping("/menu/upload")
-    public String uploadMenuItems(@RequestParam("file") MultipartFile file, Model model) {
-        String username = getLoggedInUsername();
-
-        Restaurant restaurant = restaurantRepository.findByEmployees_Username(username)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found for user: " + username));
+    // Handle CSV upload by slug
+    @PostMapping("/{slug}/menu/upload")
+    public String uploadMenuItems(
+            @PathVariable String slug,
+            @RequestParam("file") MultipartFile file,
+            Model model) {
+        // Fetch the restaurant by slug
+        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
         List<MenuItem> menuItems = new ArrayList<>();
         try (Reader reader = new InputStreamReader(file.getInputStream());
@@ -157,6 +175,8 @@ public class RestaurantController {
 
         return "restaurant/uploadMenu";
     }
+
+
 
     private String getLoggedInUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
