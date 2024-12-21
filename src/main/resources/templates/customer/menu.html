@@ -42,10 +42,41 @@
     .place-order-btn:hover {
       background-color: #0056b3;
     }
+    .status-available {
+      color: green;
+      font-weight: bold;
+    }
+    .status-limited {
+      color: orange;
+      font-weight: bold;
+    }
+    .error-message {
+      color: red;
+      font-weight: bold;
+      margin: 20px 0;
+    }
+    .success-message {
+      color: green;
+      font-weight: bold;
+      margin: 20px 0;
+    }
   </style>
 </head>
 <body>
 <h1>Menu for <span th:text="${restaurantName}">Restaurant</span></h1>
+
+<!-- Display error messages if any -->
+<div th:if="${errorMessage}" class="error-message">
+  <p th:text="${errorMessage}"></p>
+  <ul>
+    <li th:each="error : ${inventoryErrors}" th:text="${error}"></li>
+  </ul>
+</div>
+
+<!-- Display success message if available -->
+<div th:if="${message}" class="success-message">
+  <p th:text="${message}"></p>
+</div>
 
 <form th:action="@{/customer/restaurant/{slug}/order(slug=${restaurantSlug})}" method="post">
   <table>
@@ -54,6 +85,7 @@
       <th>Item Name</th>
       <th>Description</th>
       <th>Price</th>
+      <th>Availability</th>
       <th>Quantity</th>
     </tr>
     </thead>
@@ -63,7 +95,18 @@
       <td th:text="${menuItem.description}">Description</td>
       <td th:text="'$' + ${menuItem.price}">Price</td>
       <td>
-        <input type="number" th:name="'menuItemQuantities[' + ${menuItem.id} + ']'" min="0" value="0" class="quantity-input" />
+        <span th:if="${menuItem.inventory > 10}" class="status-available">Available</span>
+        <span th:if="${menuItem.inventory <= 10 && menuItem.inventory > 0}" class="status-limited">Limited Availability</span>
+        <span th:if="${menuItem.inventory == 0}" class="status-limited">Out of Stock</span>
+      </td>
+      <td>
+        <input type="number"
+               th:name="'menuItemQuantities[' + ${menuItem.id} + ']'"
+               min="0"
+               th:max="${menuItem.inventory}"
+               value="0"
+               class="quantity-input"
+               th:disabled="${menuItem.inventory == 0}" />
       </td>
     </tr>
     </tbody>

@@ -18,44 +18,38 @@ public class DeliveryController {
     @Autowired
     private CustomerOrderRepository customerOrderRepository;
 
-    @GetMapping("/home")
-    public String deliveryHome(Model model) {
-        // Retrieve authenticated user details
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
+    // Serve the allOrders page to display relevant orders
+    @GetMapping("/allOrders")
+    public String getAllOrders(Model model) {
+        // Fetch orders with relevant statuses
+        List<String> statuses = List.of("READY FOR DELIVERY", "PICKING UP", "TRANSPORT");
+        List<CustomerOrder> orders = customerOrderRepository.findByStatusesWithDetails(statuses);
 
-        // Add the username to the model
+        // Add data to the model
+        String username = getLoggedInUsername();
         model.addAttribute("username", username);
-        model.addAttribute("welcomeMessage", "Welcome to your delivery home page!");
-        return "delivery/delivery"; // Maps to templates/delivery/delivery.html
+        model.addAttribute("orders", orders);
+
+        return "delivery/allOrders"; // Maps to templates/delivery/allOrders.html
     }
 
-    // Get assigned orders with status "ASSIGNED"
-    @GetMapping("/api/assignedOrders")
-    @ResponseBody
-    public List<CustomerOrder> getAssignedOrders() {
-        return customerOrderRepository.findByStatus("ASSIGNED");
-    }
-
-    // Mark order as delivered (for API access)
-    @PostMapping("/api/orders/markDelivered")
-    @ResponseBody
-    public String markOrderAsDelivered(@RequestParam Long orderId) {
+    // Update order status action
+    @PostMapping("/orders/{orderId}/updateStatus")
+    public String updateOrderStatus(@PathVariable Long orderId, @RequestParam String status) {
+        // Fetch the order and update its status
         CustomerOrder order = customerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
-        order.setStatus("DELIVERED");
+
+        order.setStatus(status);
         customerOrderRepository.save(order);
-        return "Order marked as delivered!";
+
+        // Redirect back to the allOrders view
+        return "redirect:/delivery/allOrders";
     }
 
-    // Assign an order to a delivery person (for API access)
-    @PostMapping("/api/orders/assign")
-    @ResponseBody
-    public String assignOrderToDelivery(@RequestParam Long orderId) {
-        CustomerOrder order = customerOrderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
-        order.setStatus("ASSIGNED");
-        customerOrderRepository.save(order);
-        return "Order assigned successfully!";
+    // Utility method to get logged-in username
+    private String getLoggedInUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();
     }
 }

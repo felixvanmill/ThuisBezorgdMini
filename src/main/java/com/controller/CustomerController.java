@@ -40,14 +40,14 @@ public class CustomerController {
     @Autowired
     private AppUserRepository appUserRepository;
 
-    // Serve customer home page on /customer/home
+    // ✅ Serve customer home page on /customer/home
     @GetMapping("/home")
     public String customerHome(Model model) {
         model.addAttribute("welcomeMessage", "Welcome to the Customer Dashboard!");
         return "customer/customer"; // Renders templates/customer/customer.html
     }
 
-    // Show all available restaurants
+    // ✅ Show all available restaurants
     @GetMapping("/restaurants")
     public String getAllRestaurants(Model model) {
         List<Restaurant> restaurants = restaurantRepository.findAll();
@@ -55,17 +55,17 @@ public class CustomerController {
         return "customer/restaurants";  // Renders the restaurant selection view
     }
 
-    // Show menu items for a specific restaurant by slug
+    // ✅ Show menu items for a specific restaurant by slug
     @GetMapping("/restaurant/{slug}/menu")
     public String getMenuItemsBySlug(@PathVariable String slug, Model model) {
         // Find restaurant by slug
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
-        // Fetch menu items for the restaurant
+        // Fetch menu items with inventory > 0
         List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
+        menuItems.removeIf(menuItem -> menuItem.getInventory() <= 0); // Remove items with zero inventory
 
-        // Add attributes to model
         model.addAttribute("menuItems", menuItems);
         model.addAttribute("restaurantId", restaurant.getId());
         model.addAttribute("restaurantName", restaurant.getName());
@@ -74,7 +74,7 @@ public class CustomerController {
         return "customer/menu";  // Renders the menu view
     }
 
-
+    // ✅ Submit an order
     @PostMapping("/restaurant/{slug}/order")
     public String submitOrder(@PathVariable String slug,
                               @RequestParam Map<String, String> menuItemQuantities,
@@ -91,6 +91,8 @@ public class CustomerController {
 
         // Parse the menuItemQuantities Map
         List<OrderItem> orderItems = new ArrayList<>();
+        List<String> inventoryErrors = new ArrayList<>();
+
         for (Map.Entry<String, String> entry : menuItemQuantities.entrySet()) {
             try {
                 Long menuItemId = Long.parseLong(entry.getKey().replaceAll("[^\\d]", ""));  // Ensure key is numeric
@@ -100,11 +102,37 @@ public class CustomerController {
                     MenuItem menuItem = menuItemRepository.findById(menuItemId)
                             .orElseThrow(() -> new RuntimeException("Menu item not found for ID: " + menuItemId));
 
+                    if (menuItem.getInventory() < quantity) {
+                        inventoryErrors.add("Not enough inventory for: " + menuItem.getName() +
+                                " (Available: " + menuItem.getInventory() + ", Requested: " + quantity + ")");
+                        continue;
+                    }
+
+                    // Reduce inventory temporarily
+                    menuItem.reduceInventory(quantity);
+                    menuItemRepository.save(menuItem);
+
                     orderItems.add(new OrderItem(menuItem, quantity, null)); // Initialize with null for order number
                 }
             } catch (NumberFormatException e) {
                 System.out.println("Skipping invalid key or quantity: " + entry);
             }
+        }
+
+        // Check if there were inventory errors
+        if (!inventoryErrors.isEmpty()) {
+            model.addAttribute("errorMessage", "Some items could not be ordered due to insufficient inventory:");
+            model.addAttribute("inventoryErrors", inventoryErrors);
+
+            List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
+            menuItems.removeIf(menuItem -> menuItem.getInventory() <= 0);
+
+            model.addAttribute("menuItems", menuItems);
+            model.addAttribute("restaurantId", restaurant.getId());
+            model.addAttribute("restaurantName", restaurant.getName());
+            model.addAttribute("restaurantSlug", restaurant.getSlug());
+
+            return "customer/menu";  // Return to the menu page with error messages
         }
 
         // Calculate the total price directly
@@ -126,5 +154,4 @@ public class CustomerController {
 
         return "customer/orderConfirmation";  // Confirmation view after placing order
     }
-
 }

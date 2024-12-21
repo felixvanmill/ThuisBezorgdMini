@@ -24,7 +24,7 @@ public class CustomerOrder {
     @JoinColumn(name = "customer_order_id")
     private List<OrderItem> orderItems;
 
-    @OneToOne(cascade = CascadeType.ALL)
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     @JoinColumn(name = "address_id", referencedColumnName = "id")
     private Address address;
 
