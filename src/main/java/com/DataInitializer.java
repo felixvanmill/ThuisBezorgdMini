@@ -52,11 +52,11 @@ public class DataInitializer implements CommandLineRunner {
         restaurantEmployee2.setRestaurant(restaurant2);
         appUserRepository.saveAll(Arrays.asList(restaurantEmployee1, restaurantEmployee2));
 
-        // Create and save menu items
-        MenuItem pizza1 = new MenuItem("Margherita Pizza", "Classic cheese and tomato", 9.99, "Cheese, Tomato, Basil", restaurant1);
-        MenuItem pizza2 = new MenuItem("Pepperoni Pizza", "Cheese, tomato, and pepperoni", 11.99, "Cheese, Tomato, Pepperoni", restaurant1);
-        MenuItem sushi1 = new MenuItem("California Roll", "Crab, avocado, and cucumber", 8.99, "Crab, Avocado, Cucumber", restaurant2);
-        MenuItem sushi2 = new MenuItem("Spicy Tuna Roll", "Tuna with spicy sauce", 10.99, "Tuna, Spicy Mayo", restaurant2);
+        // Create and save menu items with initial inventory set to 999
+        MenuItem pizza1 = new MenuItem("Margherita Pizza", "Classic cheese and tomato", 9.99, "Cheese, Tomato, Basil", restaurant1, 999);
+        MenuItem pizza2 = new MenuItem("Pepperoni Pizza", "Cheese, tomato, and pepperoni", 11.99, "Cheese, Tomato, Pepperoni", restaurant1, 999);
+        MenuItem sushi1 = new MenuItem("California Roll", "Crab, avocado, and cucumber", 8.99, "Crab, Avocado, Cucumber", restaurant2, 999);
+        MenuItem sushi2 = new MenuItem("Spicy Tuna Roll", "Tuna with spicy sauce", 10.99, "Tuna, Spicy Mayo", restaurant2, 999);
         menuItemRepository.saveAll(Arrays.asList(pizza1, pizza2, sushi1, sushi2));
 
         // Create addresses
@@ -80,10 +80,17 @@ public class DataInitializer implements CommandLineRunner {
         order1.setOrderItems(List.of(orderItem1, orderItem2));
         order2.setOrderItems(List.of(orderItem3, orderItem4));
 
-        // Save updated CustomerOrders
+        // Reduce inventory based on order quantities
+        pizza1.setInventory(pizza1.getInventory() - orderItem1.getQuantity());
+        pizza2.setInventory(pizza2.getInventory() - orderItem2.getQuantity());
+        sushi1.setInventory(sushi1.getInventory() - orderItem3.getQuantity());
+        sushi2.setInventory(sushi2.getInventory() - orderItem4.getQuantity());
+
+        // Save updated CustomerOrders and MenuItems
         customerOrderRepository.saveAll(Arrays.asList(order1, order2));
+        menuItemRepository.saveAll(Arrays.asList(pizza1, pizza2, sushi1, sushi2));
 
         // Log success message
-        System.out.println("Sample data successfully added with encrypted passwords, restaurant associations, order numbers, slugs, and item quantities!");
+        System.out.println("Sample data successfully added with encrypted passwords, restaurant associations, order numbers, inventory, slugs, and item quantities!");
     }
 }

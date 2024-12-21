@@ -17,6 +17,9 @@ public class MenuItem {
     @JoinColumn(name = "restaurant_id")
     private Restaurant restaurant;
 
+    @Column(nullable = false)
+    private int inventory = 999; // Default inventory
+
     // Constructors
     public MenuItem() {
     }
@@ -32,6 +35,16 @@ public class MenuItem {
         this.price = price;
         this.ingredients = ingredients;
         this.restaurant = restaurant;
+    }
+
+    // NEW CONSTRUCTOR INCLUDING INVENTORY
+    public MenuItem(String name, String description, double price, String ingredients, Restaurant restaurant, int inventory) {
+        this.name = name;
+        this.description = description;
+        this.price = price;
+        this.ingredients = ingredients;
+        this.restaurant = restaurant;
+        this.inventory = inventory;
     }
 
     // Getters and Setters
@@ -81,5 +94,21 @@ public class MenuItem {
 
     public void setRestaurant(Restaurant restaurant) {
         this.restaurant = restaurant;
+    }
+
+    public int getInventory() {
+        return inventory;
+    }
+
+    public void setInventory(int inventory) {
+        this.inventory = inventory;
+    }
+
+    public void reduceInventory(int quantity) {
+        if (this.inventory >= quantity) {
+            this.inventory -= quantity;
+        } else {
+            throw new IllegalStateException("Insufficient inventory for " + this.name);
+        }
     }
 }

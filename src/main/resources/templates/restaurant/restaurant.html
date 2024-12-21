@@ -6,8 +6,9 @@
 <body>
 <h1>Welcome, <span th:text="${username}">Restaurant Employee</span>!</h1>
 <p>You are managing: <strong><span th:text="${restaurantName}">Restaurant Name</span></strong></p>
-<p>Manage Orders:</p>
 
+<!-- Orders Table -->
+<h2>Orders</h2>
 <table border="1">
   <thead>
   <tr>
@@ -45,6 +46,40 @@
   </tfoot>
 </table>
 
+<!-- Menu Inventory Management -->
+<h2>Menu Inventory</h2>
+<table border="1">
+  <thead>
+  <tr>
+    <th>Menu Item</th>
+    <th>Description</th>
+    <th>Price</th>
+    <th>Inventory</th>
+    <th>Update Inventory</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr th:each="menuItem : ${menuItems}">
+    <td th:text="${menuItem.name}">Item Name</td>
+    <td th:text="${menuItem.description}">Description</td>
+    <td th:text="${menuItem.price}">Price</td>
+    <td th:text="${menuItem.inventory}">Inventory</td>
+    <td>
+      <form th:action="@{/restaurant/{slug}/menu/{menuItemId}/updateInventory(slug=${slug}, menuItemId=${menuItem.id})}" method="post">
+        <input type="number" name="quantity" min="0" placeholder="Add Inventory" required>
+        <button type="submit">Update</button>
+      </form>
+    </td>
+  </tr>
+  </tbody>
+  <tfoot th:if="${#lists.isEmpty(menuItems)}">
+  <tr>
+    <td colspan="5">No menu items found for this restaurant.</td>
+  </tr>
+  </tfoot>
+</table>
+
+<!-- Upload Menu Items -->
 <p><a th:href="@{/restaurant/{slug}/menu/upload(slug=${slug})}">Upload Menu Items</a></p>
 <a href="/logout">Logout</a>
 </body>
