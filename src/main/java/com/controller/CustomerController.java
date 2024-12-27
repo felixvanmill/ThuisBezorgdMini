@@ -138,8 +138,11 @@ public class CustomerController {
         // Calculate the total price directly
         double totalPrice = orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
 
-        // Create and save the new order with totalPrice included in the constructor
-        CustomerOrder newOrder = new CustomerOrder(customer, orderItems, new Address(), "UNCONFIRMED", totalPrice, restaurant);
+        // Retrieve the address associated with the customer
+        Address customerAddress = customer.getAddress(); // Ensure AppUser has a getAddress method
+
+        // Use the existing address when creating the order
+        CustomerOrder newOrder = new CustomerOrder(customer, orderItems, customerAddress, "UNCONFIRMED", totalPrice, restaurant);
 
         // Set order number for each OrderItem
         orderItems.forEach(orderItem -> orderItem.setOrderNumber(newOrder.getOrderNumber()));

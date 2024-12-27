@@ -25,6 +25,11 @@ public class AppUser {
     @JoinColumn(name = "restaurant_id") // Foreign key to the restaurant
     private Restaurant restaurant; // Association to a restaurant (for employees)
 
+    @ManyToOne
+    @JoinColumn(name = "address_id")
+    private Address address;
+
+
     // Default constructor
     public AppUser() {
     }
@@ -94,4 +99,12 @@ public class AppUser {
     public void setRestaurant(Restaurant restaurant) {
         this.restaurant = restaurant;
     }
+    public Address getAddress() {
+        return address;
+    }
+
+    public void setAddress(Address address) {
+        this.address = address;
+    }
+
 }
