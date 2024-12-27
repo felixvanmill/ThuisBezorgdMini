@@ -2,11 +2,7 @@
 
 package com.controller;
 
-import com.model.CustomerOrder;
-import com.model.MenuItem;
-import com.model.OrderItem;
-import com.model.Restaurant;
-import com.model.AppUser;
+import com.model.*;
 import com.repository.AppUserRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.MenuItemRepository;
@@ -17,8 +13,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
-
-import com.model.Address;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -142,7 +136,14 @@ public class CustomerController {
         Address customerAddress = customer.getAddress(); // Ensure AppUser has a getAddress method
 
         // Use the existing address when creating the order
-        CustomerOrder newOrder = new CustomerOrder(customer, orderItems, customerAddress, "UNCONFIRMED", totalPrice, restaurant);
+        CustomerOrder newOrder = new CustomerOrder(
+                customer,
+                orderItems,
+                customerAddress,
+                OrderStatus.UNCONFIRMED,
+                totalPrice,
+                restaurant
+        );
 
         // Set order number for each OrderItem
         orderItems.forEach(orderItem -> orderItem.setOrderNumber(newOrder.getOrderNumber()));

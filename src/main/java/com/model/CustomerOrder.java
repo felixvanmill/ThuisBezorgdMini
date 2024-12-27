@@ -12,12 +12,11 @@ public class CustomerOrder {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Unique order number field
     @Column(name = "order_number", unique = true, nullable = false)
     private String orderNumber;
 
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
@@ -29,24 +28,24 @@ public class CustomerOrder {
     private Address address;
 
     @ManyToOne
-    @JoinColumn(name = "restaurant_id")
+    @JoinColumn(name = "restaurant_id", nullable = false)
     private Restaurant restaurant;
 
-    private String status;
+    @Enumerated(EnumType.STRING) // Maps enum to string in DB
+    @Column(nullable = false)
+    private OrderStatus status;
 
     @Column(name = "total_price")
     private double totalPrice;
 
-    // Default constructor that generates a unique order number
+    // Default constructor
     public CustomerOrder() {
         this.orderNumber = generateOrderNumber();
     }
 
-    // Constructor to initialize all fields, including totalPrice
-// CustomerOrder.java
-
-    public CustomerOrder(AppUser user, List<OrderItem> orderItems, Address address, String status, double totalPrice, Restaurant restaurant) {
-        this.orderNumber = generateOrderNumber();  // Ensure order number is generated
+    // Constructor to initialize all fields
+    public CustomerOrder(AppUser user, List<OrderItem> orderItems, Address address, OrderStatus status, double totalPrice, Restaurant restaurant) {
+        this.orderNumber = generateOrderNumber();
         this.user = user;
         this.orderItems = orderItems;
         this.address = address;
@@ -55,18 +54,17 @@ public class CustomerOrder {
         this.restaurant = restaurant;
     }
 
-
-    // Method to generate a unique order number
+    // Generate unique order number
     private String generateOrderNumber() {
         return "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
+    // Calculate total price from order items
     public double calculateTotalPrice() {
         return orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
     }
 
-    // Getters and setters
-
+    // Getters and Setters
     public Long getId() {
         return id;
     }
@@ -97,7 +95,6 @@ public class CustomerOrder {
         this.totalPrice = calculateTotalPrice();
     }
 
-
     public double getTotalPrice() {
         return totalPrice;
     }
@@ -110,11 +107,11 @@ public class CustomerOrder {
         this.address = address;
     }
 
-    public String getStatus() {
+    public OrderStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(OrderStatus status) {
         this.status = status;
     }
 

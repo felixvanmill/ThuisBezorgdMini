@@ -1,9 +1,10 @@
 package com.service;
 
 import com.model.CustomerOrder;
+import com.model.OrderStatus;
+import com.repository.CustomerOrderRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.repository.CustomerOrderRepository;
 
 import java.util.List;
 import java.util.Optional;
@@ -30,10 +31,15 @@ public class OrderService {
         Optional<CustomerOrder> orderOptional = orderRepository.findById(id);
         if (orderOptional.isPresent()) {
             CustomerOrder order = orderOptional.get();
-            order.setStatus(status);
-            return orderRepository.save(order);
+            try {
+                OrderStatus orderStatus = OrderStatus.valueOf(status); // Convert String to Enum
+                order.setStatus(orderStatus);
+                return orderRepository.save(order);
+            } catch (IllegalArgumentException e) {
+                throw new RuntimeException("Invalid OrderStatus: " + status);
+            }
         }
-        return null; // Hier kun je een exception gooien als order niet gevonden wordt.
+        throw new RuntimeException("Order not found with ID: " + id);
     }
 
     public void deleteOrder(Long id) {

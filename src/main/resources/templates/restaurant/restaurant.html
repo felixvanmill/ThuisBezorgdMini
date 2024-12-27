@@ -29,11 +29,17 @@
     <td>
       <form th:action="@{/restaurant/{slug}/orders/{orderId}/updateStatus(slug=${slug}, orderId=${order.id})}" method="post">
         <select name="status">
-          <option value="" disabled selected>Select Status</option>
-          <option value="CONFIRMED" th:selected="${order.status == 'CONFIRMED'}">Confirm</option>
-          <option value="IN KITCHEN" th:selected="${order.status == 'IN KITCHEN'}">In Kitchen</option>
-          <option value="READY FOR DELIVERY" th:selected="${order.status == 'READY FOR DELIVERY'}">Ready for Delivery</option>
+          <option value="" disabled>Select Status</option>
+          <option
+                  th:each="statusOption : ${T(com.model.OrderStatus).values()}"
+                  th:if="${#lists.contains({T(com.model.OrderStatus).UNCONFIRMED, T(com.model.OrderStatus).IN_KITCHEN, T(com.model.OrderStatus).READY_FOR_DELIVERY}, statusOption)}"
+                  th:value="${statusOption}"
+                  th:text="${statusOption}"
+                  th:selected="${order.status == statusOption}">
+          </option>
         </select>
+
+
         <button type="submit">Update</button>
       </form>
     </td>

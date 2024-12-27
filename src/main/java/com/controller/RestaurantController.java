@@ -1,19 +1,12 @@
 package com.controller;
 
-import java.io.Reader;
-import java.io.InputStreamReader;
-
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
-
 import com.model.CustomerOrder;
 import com.model.MenuItem;
+import com.model.OrderStatus;
 import com.model.Restaurant;
 import com.repository.CustomerOrderRepository;
 import com.repository.MenuItemRepository;
 import com.repository.RestaurantRepository;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -22,8 +15,13 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.ArrayList;
 import java.util.List;
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
+import org.apache.commons.csv.CSVRecord;
 
 @Controller
 @RequestMapping("/restaurant")
@@ -103,27 +101,47 @@ public class RestaurantController {
         return "restaurant/orderDetails";
     }
 
-    // ✅ Update order status by slug and order ID
+    // ✅ Update order status by slug and order ID and restricts non-allowed changes
     @PostMapping("/{slug}/orders/{orderId}/updateStatus")
     public String updateOrderStatus(
             @PathVariable String slug,
             @PathVariable Long orderId,
             @RequestParam String status) {
+
+        // Fetch the restaurant
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
+        // Fetch the order
         CustomerOrder order = customerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
+        // Verify the order belongs to the restaurant
         if (!order.getRestaurant().getId().equals(restaurant.getId())) {
             throw new RuntimeException("Order does not belong to the specified restaurant.");
         }
 
-        order.setStatus(status);
-        customerOrderRepository.save(order);
+        try {
+            OrderStatus orderStatus = OrderStatus.valueOf(status); // ✅ Convert String to Enum
+
+            // ✅ Restrict statuses allowed for restaurant employees
+            if (!List.of(
+                    OrderStatus.UNCONFIRMED,
+                    OrderStatus.IN_KITCHEN,
+                    OrderStatus.READY_FOR_DELIVERY
+            ).contains(orderStatus)) {
+                throw new IllegalArgumentException("Unauthorized status change: " + status);
+            }
+
+            order.setStatus(orderStatus);
+            customerOrderRepository.save(order);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid or unauthorized status value: " + status);
+        }
 
         return "redirect:/restaurant/" + slug + "/management";
     }
+
 
     // ✅ Serve file upload form by slug
     @GetMapping("/{slug}/menu/upload")
@@ -170,35 +188,4 @@ public class RestaurantController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
     }
-
-    // ✅ Update inventory for a menu item
-    @PostMapping("/{slug}/menu/{menuItemId}/updateInventory")
-    public String updateInventory(
-            @PathVariable String slug,
-            @PathVariable Long menuItemId,
-            @RequestParam int quantity) {
-
-        // Fetch the restaurant by slug
-        Restaurant restaurant = restaurantRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
-
-        // Fetch the menu item by ID
-        MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new RuntimeException("MenuItem not found with ID: " + menuItemId));
-
-        // Verify menu item belongs to the restaurant
-        if (!menuItem.getRestaurant().getId().equals(restaurant.getId())) {
-            throw new RuntimeException("MenuItem does not belong to the specified restaurant.");
-        }
-
-        // Update inventory
-        if (quantity < 0) {
-            throw new IllegalArgumentException("Inventory quantity cannot be negative.");
-        }
-        menuItem.setInventory(menuItem.getInventory() + quantity);
-        menuItemRepository.save(menuItem);
-
-        return "redirect:/restaurant/" + slug + "/management";
-    }
-
 }
