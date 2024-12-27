@@ -22,10 +22,13 @@ import java.util.List;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 @Controller
 @RequestMapping("/restaurant")
-public class RestaurantController {
+public class RestaurantController { private static final Logger logger = LoggerFactory.getLogger(RestaurantController.class);
 
     @Autowired
     private CustomerOrderRepository customerOrderRepository;
@@ -183,6 +186,61 @@ public class RestaurantController {
 
         return "restaurant/uploadMenu";
     }
+
+    // ✅ Validate restaurant by slug
+    private Restaurant validateRestaurant(String slug) {
+        return restaurantRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+    }
+
+    // ✅ Validate menu item belongs to a restaurant
+    private MenuItem validateMenuItem(Long menuItemId, Long restaurantId) {
+        MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                .orElseThrow(() -> new RuntimeException("MenuItem not found with ID: " + menuItemId));
+        if (!menuItem.getRestaurant().getId().equals(restaurantId)) {
+            throw new RuntimeException("MenuItem does not belong to the specified restaurant.");
+        }
+        return menuItem;
+    }
+
+    @PostMapping("/{slug}/menu/{menuItemId}/updateInventory")
+    public String updateInventory(
+            @PathVariable String slug,
+            @PathVariable Long menuItemId,
+            @RequestParam int quantity,
+            Model model) {
+
+        try {
+            // Validate restaurant and menu item
+            Restaurant restaurant = validateRestaurant(slug);
+            MenuItem menuItem = validateMenuItem(menuItemId, restaurant.getId());
+
+            // Validate inventory quantity
+            if (quantity < 0) {
+                throw new IllegalArgumentException("Inventory quantity cannot be negative.");
+            }
+
+            // Update inventory
+            menuItem.setInventory(menuItem.getInventory() + quantity);
+            menuItemRepository.save(menuItem);
+
+            model.addAttribute("success", "Inventory updated successfully!");
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Invalid inventory update attempt: ", e);
+            model.addAttribute("error", "Invalid quantity: " + e.getMessage());
+        } catch (RuntimeException e) {
+            logger.error("Validation failed during inventory update: ", e);
+            model.addAttribute("error", "Error: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Unexpected error updating inventory: ", e);
+            model.addAttribute("error", "Unexpected error: " + e.getMessage());
+        }
+
+        return "redirect:/restaurant/" + slug + "/management";
+    }
+
+
 
     private String getLoggedInUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
