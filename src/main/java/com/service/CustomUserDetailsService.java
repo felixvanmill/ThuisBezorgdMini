@@ -20,12 +20,12 @@ public class CustomUserDetailsService implements UserDetailsService {
     private AppUserRepository userRepository;
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        AppUser user = userRepository.findByUsername(username)
+    public UserDetails loadUserByUsername(final String username) throws UsernameNotFoundException {
+        final AppUser user = this.userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
         // Prefix the role with "ROLE_" to match Spring Security conventions
-        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole());
+        final GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole());
 
         return new User(
                 user.getUsername(),

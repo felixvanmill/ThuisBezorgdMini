@@ -25,66 +25,66 @@ public class Restaurant {
     // Constructors
     public Restaurant() {}
 
-    public Restaurant(String name, String description, String location) {
+    public Restaurant(final String name, final String description, final String location) {
         this.name = name;
         this.description = description;
         this.location = location;
-        this.slug = generateSlug(name); // Automatically generate slug
+        slug = this.generateSlug(name); // Automatically generate slug
     }
 
     // Slug generation logic
-    private String generateSlug(String name) {
+    private String generateSlug(final String name) {
         return name.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("-$", "");
     }
 
-    public void setName(String name) {
+    public void setName(final String name) {
         this.name = name;
-        this.slug = generateSlug(name); // Update slug when name changes
+        slug = this.generateSlug(name); // Update slug when name changes
     }
 
     // Getters and setters
 
     public Long getId() {
-        return id;
+        return this.id;
     }
 
     public String getSlug() {
-        return slug;
+        return this.slug;
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(final String description) {
         this.description = description;
     }
 
     public String getDescription() {
-        return description;
+        return this.description;
     }
 
     public String getLocation() {
-        return location;
+        return this.location;
     }
 
-    public void setLocation(String location) {
+    public void setLocation(final String location) {
         this.location = location;
     }
 
     public List<MenuItem> getMenuItems() {
-        return menuItems;
+        return this.menuItems;
     }
 
-    public void setMenuItems(List<MenuItem> menuItems) {
+    public void setMenuItems(final List<MenuItem> menuItems) {
         this.menuItems = menuItems;
     }
 
     public List<AppUser> getEmployees() {
-        return employees;
+        return this.employees;
     }
 
-    public void setEmployees(List<AppUser> employees) {
+    public void setEmployees(final List<AppUser> employees) {
         this.employees = employees;
     }
 }

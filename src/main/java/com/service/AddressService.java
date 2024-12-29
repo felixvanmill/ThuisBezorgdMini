@@ -20,8 +20,8 @@ public class AddressService {
      * @param id Address ID.
      * @return Address if found.
      */
-    public Address getAddressById(Long id) {
-        return addressRepository.findById(id)
+    public Address getAddressById(final Long id) {
+        return this.addressRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Address not found for ID: " + id));
     }
 
@@ -30,7 +30,7 @@ public class AddressService {
      * @param address Address object to save.
      * @return Saved address.
      */
-    public Address createAddress(Address address) {
-        return addressRepository.save(address);
+    public Address createAddress(final Address address) {
+        return this.addressRepository.save(address);
     }
 }

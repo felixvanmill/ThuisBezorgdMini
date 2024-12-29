@@ -19,13 +19,13 @@ public class SecurityConfig {
     private final CustomUserDetailsService userDetailsService;
     private final CustomLoginSuccessHandler customLoginSuccessHandler;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService, CustomLoginSuccessHandler customLoginSuccessHandler) {
+    public SecurityConfig(final CustomUserDetailsService userDetailsService, final CustomLoginSuccessHandler customLoginSuccessHandler) {
         this.userDetailsService = userDetailsService;
         this.customLoginSuccessHandler = customLoginSuccessHandler;
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
@@ -37,7 +37,7 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form
                         .permitAll()
-                        .successHandler(customLoginSuccessHandler)  // Use the custom handler
+                        .successHandler(this.customLoginSuccessHandler)  // Use the custom handler
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
@@ -55,9 +55,9 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder authManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        authManagerBuilder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
+    public AuthenticationManager authenticationManager(final HttpSecurity http) throws Exception {
+        final AuthenticationManagerBuilder authManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
+        authManagerBuilder.userDetailsService(this.userDetailsService).passwordEncoder(this.passwordEncoder());
         return authManagerBuilder.build();
     }
 }

@@ -17,6 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import org.apache.commons.csv.CSVFormat;
@@ -41,14 +42,14 @@ public class RestaurantController { private static final Logger logger = LoggerF
 
     // ✅ Restaurant management page by slug
     @GetMapping("/{slug}/management")
-    public String restaurantManagementBySlug(@PathVariable String slug, Model model) {
-        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+    public String restaurantManagementBySlug(@PathVariable final String slug, final Model model) {
+        final Restaurant restaurant = this.restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
-        List<CustomerOrder> orders = customerOrderRepository.findByRestaurant_Id(restaurant.getId());
-        List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
+        final List<CustomerOrder> orders = this.customerOrderRepository.findByRestaurant_Id(restaurant.getId());
+        final List<MenuItem> menuItems = this.menuItemRepository.findByRestaurant_Id(restaurant.getId());
 
-        model.addAttribute("username", getLoggedInUsername());
+        model.addAttribute("username", this.getLoggedInUsername());
         model.addAttribute("welcomeMessage", "Welcome to your restaurant management dashboard!");
         model.addAttribute("orders", orders);
         model.addAttribute("menuItems", menuItems);
@@ -61,9 +62,9 @@ public class RestaurantController { private static final Logger logger = LoggerF
     // ✅ Default restaurant management page (redirect to slug-based URL)
     @GetMapping("/management")
     public String restaurantManagementRedirect() {
-        String username = getLoggedInUsername();
+        final String username = this.getLoggedInUsername();
 
-        Restaurant restaurant = restaurantRepository.findByEmployees_Username(username)
+        final Restaurant restaurant = this.restaurantRepository.findByEmployees_Username(username)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for user: " + username));
 
         return "redirect:/restaurant/" + restaurant.getSlug() + "/management";
@@ -71,11 +72,11 @@ public class RestaurantController { private static final Logger logger = LoggerF
 
     // ✅ View menu for a restaurant (with slug)
     @GetMapping("/{slug}/menu")
-    public String viewMenuBySlug(@PathVariable String slug, Model model) {
-        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+    public String viewMenuBySlug(@PathVariable final String slug, final Model model) {
+        final Restaurant restaurant = this.restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found with slug: " + slug));
 
-        List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
+        final List<MenuItem> menuItems = this.menuItemRepository.findByRestaurant_Id(restaurant.getId());
 
         model.addAttribute("menuItems", menuItems);
         model.addAttribute("restaurantName", restaurant.getName());
@@ -85,14 +86,14 @@ public class RestaurantController { private static final Logger logger = LoggerF
     // ✅ View order details by slug and order number
     @GetMapping("/{slug}/orders/{orderNumber}/details")
     public String viewOrderDetailsByOrderNumber(
-            @PathVariable String slug,
-            @PathVariable String orderNumber,
-            Model model) {
+            @PathVariable final String slug,
+            @PathVariable final String orderNumber,
+            final Model model) {
 
-        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+        final Restaurant restaurant = this.restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
-        CustomerOrder order = customerOrderRepository.findByOrderNumberWithItems(orderNumber)
+        final CustomerOrder order = this.customerOrderRepository.findByOrderNumberWithItems(orderNumber)
                 .orElseThrow(() -> new RuntimeException("Order not found with number: " + orderNumber));
 
         if (!order.getRestaurant().getId().equals(restaurant.getId())) {
@@ -107,16 +108,16 @@ public class RestaurantController { private static final Logger logger = LoggerF
     // ✅ Update order status by slug and order ID and restricts non-allowed changes
     @PostMapping("/{slug}/orders/{orderId}/updateStatus")
     public String updateOrderStatus(
-            @PathVariable String slug,
-            @PathVariable Long orderId,
-            @RequestParam String status) {
+            @PathVariable final String slug,
+            @PathVariable final Long orderId,
+            @RequestParam final String status) {
 
         // Fetch the restaurant
-        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+        final Restaurant restaurant = this.restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
         // Fetch the order
-        CustomerOrder order = customerOrderRepository.findById(orderId)
+        final CustomerOrder order = this.customerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
         // Verify the order belongs to the restaurant
@@ -125,7 +126,7 @@ public class RestaurantController { private static final Logger logger = LoggerF
         }
 
         try {
-            OrderStatus orderStatus = OrderStatus.valueOf(status); // ✅ Convert String to Enum
+            final OrderStatus orderStatus = OrderStatus.valueOf(status); // ✅ Convert String to Enum
 
             // ✅ Restrict statuses allowed for restaurant employees
             if (!List.of(
@@ -137,8 +138,8 @@ public class RestaurantController { private static final Logger logger = LoggerF
             }
 
             order.setStatus(orderStatus);
-            customerOrderRepository.save(order);
-        } catch (IllegalArgumentException e) {
+            this.customerOrderRepository.save(order);
+        } catch (final IllegalArgumentException e) {
             throw new RuntimeException("Invalid or unauthorized status value: " + status);
         }
 
@@ -148,7 +149,7 @@ public class RestaurantController { private static final Logger logger = LoggerF
 
     // ✅ Serve file upload form by slug
     @GetMapping("/{slug}/menu/upload")
-    public String uploadMenuForm(@PathVariable String slug, Model model) {
+    public String uploadMenuForm(@PathVariable final String slug, final Model model) {
         model.addAttribute("message", "Upload a CSV file to add new menu items.");
         model.addAttribute("slug", slug);
         return "restaurant/uploadMenu";
@@ -157,30 +158,30 @@ public class RestaurantController { private static final Logger logger = LoggerF
     // ✅ Handle CSV upload by slug
     @PostMapping("/{slug}/menu/upload")
     public String uploadMenuItems(
-            @PathVariable String slug,
-            @RequestParam("file") MultipartFile file,
-            Model model) {
-        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+            @PathVariable final String slug,
+            @RequestParam("file") final MultipartFile file,
+            final Model model) {
+        final Restaurant restaurant = this.restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
-        List<MenuItem> menuItems = new ArrayList<>();
-        try (Reader reader = new InputStreamReader(file.getInputStream());
-             CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
+        final List<MenuItem> menuItems = new ArrayList<>();
+        try (final Reader reader = new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8);
+             final CSVParser csvParser = new CSVParser(reader, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
 
-            for (CSVRecord record : csvParser) {
-                String name = record.get("name").trim();
-                String description = record.get("description").trim();
-                double price = Double.parseDouble(record.get("price").trim());
-                String ingredients = record.get("ingredients").trim().replace("|", ", ");
-                int inventory = Integer.parseInt(record.get("inventory").trim());
+            for (final CSVRecord record : csvParser) {
+                final String name = record.get("name").trim();
+                final String description = record.get("description").trim();
+                final double price = Double.parseDouble(record.get("price").trim());
+                final String ingredients = record.get("ingredients").trim().replace("|", ", ");
+                final int inventory = Integer.parseInt(record.get("inventory").trim());
 
-                MenuItem menuItem = new MenuItem(name, description, price, ingredients, restaurant, inventory);
+                final MenuItem menuItem = new MenuItem(name, description, price, ingredients, restaurant, inventory);
                 menuItems.add(menuItem);
             }
 
-            menuItemRepository.saveAll(menuItems);
+            this.menuItemRepository.saveAll(menuItems);
             model.addAttribute("success", "Menu items uploaded successfully!");
-        } catch (Exception e) {
+        } catch (final Exception e) {
             model.addAttribute("error", "Error processing CSV file: " + e.getMessage());
         }
 
@@ -188,14 +189,14 @@ public class RestaurantController { private static final Logger logger = LoggerF
     }
 
     // ✅ Validate restaurant by slug
-    private Restaurant validateRestaurant(String slug) {
-        return restaurantRepository.findBySlug(slug)
+    private Restaurant validateRestaurant(final String slug) {
+        return this.restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
     }
 
     // ✅ Validate menu item belongs to a restaurant
-    private MenuItem validateMenuItem(Long menuItemId, Long restaurantId) {
-        MenuItem menuItem = menuItemRepository.findById(menuItemId)
+    private MenuItem validateMenuItem(final Long menuItemId, final Long restaurantId) {
+        final MenuItem menuItem = this.menuItemRepository.findById(menuItemId)
                 .orElseThrow(() -> new RuntimeException("MenuItem not found with ID: " + menuItemId));
         if (!menuItem.getRestaurant().getId().equals(restaurantId)) {
             throw new RuntimeException("MenuItem does not belong to the specified restaurant.");
@@ -205,35 +206,35 @@ public class RestaurantController { private static final Logger logger = LoggerF
 
     @PostMapping("/{slug}/menu/{menuItemId}/updateInventory")
     public String updateInventory(
-            @PathVariable String slug,
-            @PathVariable Long menuItemId,
-            @RequestParam int quantity,
-            Model model) {
+            @PathVariable final String slug,
+            @PathVariable final Long menuItemId,
+            @RequestParam final int quantity,
+            final Model model) {
 
         try {
             // Validate restaurant and menu item
-            Restaurant restaurant = validateRestaurant(slug);
-            MenuItem menuItem = validateMenuItem(menuItemId, restaurant.getId());
+            final Restaurant restaurant = this.validateRestaurant(slug);
+            final MenuItem menuItem = this.validateMenuItem(menuItemId, restaurant.getId());
 
             // Validate inventory quantity
-            if (quantity < 0) {
+            if (0 > quantity) {
                 throw new IllegalArgumentException("Inventory quantity cannot be negative.");
             }
 
             // Update inventory
             menuItem.setInventory(menuItem.getInventory() + quantity);
-            menuItemRepository.save(menuItem);
+            this.menuItemRepository.save(menuItem);
 
             model.addAttribute("success", "Inventory updated successfully!");
 
-        } catch (IllegalArgumentException e) {
-            logger.error("Invalid inventory update attempt: ", e);
+        } catch (final IllegalArgumentException e) {
+            RestaurantController.logger.error("Invalid inventory update attempt: ", e);
             model.addAttribute("error", "Invalid quantity: " + e.getMessage());
-        } catch (RuntimeException e) {
-            logger.error("Validation failed during inventory update: ", e);
+        } catch (final RuntimeException e) {
+            RestaurantController.logger.error("Validation failed during inventory update: ", e);
             model.addAttribute("error", "Error: " + e.getMessage());
-        } catch (Exception e) {
-            logger.error("Unexpected error updating inventory: ", e);
+        } catch (final Exception e) {
+            RestaurantController.logger.error("Unexpected error updating inventory: ", e);
             model.addAttribute("error", "Unexpected error: " + e.getMessage());
         }
 
@@ -243,7 +244,7 @@ public class RestaurantController { private static final Logger logger = LoggerF
 
 
     private String getLoggedInUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
     }
 }

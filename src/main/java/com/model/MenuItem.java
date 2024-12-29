@@ -24,12 +24,12 @@ public class MenuItem {
     public MenuItem() {
     }
 
-    public MenuItem(String name, double price) {
+    public MenuItem(final String name, final double price) {
         this.name = name;
         this.price = price;
     }
 
-    public MenuItem(String name, String description, double price, String ingredients, Restaurant restaurant) {
+    public MenuItem(final String name, final String description, final double price, final String ingredients, final Restaurant restaurant) {
         this.name = name;
         this.description = description;
         this.price = price;
@@ -38,7 +38,7 @@ public class MenuItem {
     }
 
     // NEW CONSTRUCTOR INCLUDING INVENTORY
-    public MenuItem(String name, String description, double price, String ingredients, Restaurant restaurant, int inventory) {
+    public MenuItem(final String name, final String description, final double price, final String ingredients, final Restaurant restaurant, final int inventory) {
         this.name = name;
         this.description = description;
         this.price = price;
@@ -49,66 +49,66 @@ public class MenuItem {
 
     // Getters and Setters
     public Long getId() {
-        return id;
+        return this.id;
     }
 
-    public void setId(Long id) {
+    public void setId(final Long id) {
         this.id = id;
     }
 
     public String getName() {
-        return name;
+        return this.name;
     }
 
-    public void setName(String name) {
+    public void setName(final String name) {
         this.name = name;
     }
 
     public String getDescription() {
-        return description;
+        return this.description;
     }
 
-    public void setDescription(String description) {
+    public void setDescription(final String description) {
         this.description = description;
     }
 
     public double getPrice() {
-        return price;
+        return this.price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(final double price) {
         this.price = price;
     }
 
     public String getIngredients() {
-        return ingredients;
+        return this.ingredients;
     }
 
-    public void setIngredients(String ingredients) {
+    public void setIngredients(final String ingredients) {
         this.ingredients = ingredients;
     }
 
     public Restaurant getRestaurant() {
-        return restaurant;
+        return this.restaurant;
     }
 
-    public void setRestaurant(Restaurant restaurant) {
+    public void setRestaurant(final Restaurant restaurant) {
         this.restaurant = restaurant;
     }
 
     public int getInventory() {
-        return inventory;
+        return this.inventory;
     }
 
-    public void setInventory(int inventory) {
+    public void setInventory(final int inventory) {
         this.inventory = inventory;
     }
 
-    public void reduceInventory(int quantity) {
-        if (this.inventory >= quantity) {
-            this.inventory -= quantity;
+    public void reduceInventory(final int quantity) {
+        if (inventory >= quantity) {
+            inventory -= quantity;
         } else {
-            throw new IllegalStateException("Insufficient inventory for " + this.name);
+            throw new IllegalStateException("Insufficient inventory for " + name);
         }
     }
 }

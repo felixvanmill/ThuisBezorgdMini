@@ -10,8 +10,8 @@ public class DashboardController {
 
     @GetMapping("/dashboard")
     public String dashboard() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String role = authentication.getAuthorities().iterator().next().getAuthority();
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        final String role = authentication.getAuthorities().iterator().next().getAuthority();
 
         // Role-based redirection after login
         switch (role) {

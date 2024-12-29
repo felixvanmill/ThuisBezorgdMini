@@ -18,20 +18,20 @@ public class MenuItemService {
     private MenuItemRepository menuItemRepository;
 
     public List<MenuItem> getAllMenuItems() {
-        return menuItemRepository.findAll();
+        return this.menuItemRepository.findAll();
     }
 
-    public Optional<MenuItem> getMenuItemById(Long id) {
-        return menuItemRepository.findById(id);
+    public Optional<MenuItem> getMenuItemById(final Long id) {
+        return this.menuItemRepository.findById(id);
     }
 
-    public MenuItem addMenuItem(MenuItem menuItem) {
-        return menuItemRepository.save(menuItem);
+    public MenuItem addMenuItem(final MenuItem menuItem) {
+        return this.menuItemRepository.save(menuItem);
     }
 
     @Transactional
-    public MenuItem updateMenuItem(Long id, MenuItem menuItemDetails) {
-        MenuItem menuItem = menuItemRepository.findById(id)
+    public MenuItem updateMenuItem(final Long id, final MenuItem menuItemDetails) {
+        final MenuItem menuItem = this.menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
 
         // Update the fields using the setters
@@ -40,10 +40,10 @@ public class MenuItemService {
         menuItem.setPrice(menuItemDetails.getPrice());
         menuItem.setIngredients(menuItemDetails.getIngredients());
 
-        return menuItemRepository.save(menuItem);
+        return this.menuItemRepository.save(menuItem);
     }
 
-    public void deleteMenuItem(Long id) {
-        menuItemRepository.deleteById(id);
+    public void deleteMenuItem(final Long id) {
+        this.menuItemRepository.deleteById(id);
     }
 }

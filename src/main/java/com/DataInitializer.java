@@ -33,38 +33,38 @@ public class DataInitializer implements CommandLineRunner {
     private PasswordEncoder passwordEncoder;
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(final String... args) throws Exception {
         // ✅ Create and save users with encrypted passwords
-        AppUser user1 = new AppUser("johndoe", passwordEncoder.encode("password123"), "CUSTOMER", "John Doe");
-        AppUser restaurantEmployee1 = new AppUser("marysmith", passwordEncoder.encode("password123"), "RESTAURANT_EMPLOYEE", "Mary Smith");
-        AppUser restaurantEmployee2 = new AppUser("pizzachef", passwordEncoder.encode("password123"), "RESTAURANT_EMPLOYEE", "Pizza Chef");
-        AppUser deliveryPerson = new AppUser("alexjohnson", passwordEncoder.encode("password123"), "DELIVERY_PERSON", "Alex Johnson");
+        final AppUser user1 = new AppUser("johndoe", this.passwordEncoder.encode("password123"), "CUSTOMER", "John Doe");
+        final AppUser restaurantEmployee1 = new AppUser("marysmith", this.passwordEncoder.encode("password123"), "RESTAURANT_EMPLOYEE", "Mary Smith");
+        final AppUser restaurantEmployee2 = new AppUser("pizzachef", this.passwordEncoder.encode("password123"), "RESTAURANT_EMPLOYEE", "Pizza Chef");
+        final AppUser deliveryPerson = new AppUser("alexjohnson", this.passwordEncoder.encode("password123"), "DELIVERY_PERSON", "Alex Johnson");
 
-        appUserRepository.saveAll(Arrays.asList(user1, restaurantEmployee1, restaurantEmployee2, deliveryPerson));
+        this.appUserRepository.saveAll(Arrays.asList(user1, restaurantEmployee1, restaurantEmployee2, deliveryPerson));
 
         // ✅ Create and save restaurants
-        Restaurant restaurant1 = new Restaurant("Pizza Place", "Pizzeria specializing in Italian dishes", "123 Main St, City");
-        Restaurant restaurant2 = new Restaurant("Sushi World", "Authentic Japanese restaurant with fresh sushi", "456 Ocean Ave, City");
-        restaurantRepository.saveAll(Arrays.asList(restaurant1, restaurant2));
+        final Restaurant restaurant1 = new Restaurant("Pizza Place", "Pizzeria specializing in Italian dishes", "123 Main St, City");
+        final Restaurant restaurant2 = new Restaurant("Sushi World", "Authentic Japanese restaurant with fresh sushi", "456 Ocean Ave, City");
+        this.restaurantRepository.saveAll(Arrays.asList(restaurant1, restaurant2));
 
         // ✅ Assign employees to restaurants
         restaurantEmployee1.setRestaurant(restaurant1);
         restaurantEmployee2.setRestaurant(restaurant2);
-        appUserRepository.saveAll(Arrays.asList(restaurantEmployee1, restaurantEmployee2));
+        this.appUserRepository.saveAll(Arrays.asList(restaurantEmployee1, restaurantEmployee2));
 
         // ✅ Create and save menu items
-        MenuItem pizza1 = new MenuItem("Margherita Pizza", "Classic cheese and tomato", 9.99, "Cheese, Tomato, Basil", restaurant1, 999);
-        MenuItem pizza2 = new MenuItem("Pepperoni Pizza", "Cheese, tomato, and pepperoni", 11.99, "Cheese, Tomato, Pepperoni", restaurant1, 999);
-        MenuItem sushi1 = new MenuItem("California Roll", "Crab, avocado, and cucumber", 8.99, "Crab, Avocado, Cucumber", restaurant2, 999);
-        MenuItem sushi2 = new MenuItem("Spicy Tuna Roll", "Tuna with spicy sauce", 10.99, "Tuna, Spicy Mayo", restaurant2, 999);
-        menuItemRepository.saveAll(Arrays.asList(pizza1, pizza2, sushi1, sushi2));
+        final MenuItem pizza1 = new MenuItem("Margherita Pizza", "Classic cheese and tomato", 9.99, "Cheese, Tomato, Basil", restaurant1, 999);
+        final MenuItem pizza2 = new MenuItem("Pepperoni Pizza", "Cheese, tomato, and pepperoni", 11.99, "Cheese, Tomato, Pepperoni", restaurant1, 999);
+        final MenuItem sushi1 = new MenuItem("California Roll", "Crab, avocado, and cucumber", 8.99, "Crab, Avocado, Cucumber", restaurant2, 999);
+        final MenuItem sushi2 = new MenuItem("Spicy Tuna Roll", "Tuna with spicy sauce", 10.99, "Tuna, Spicy Mayo", restaurant2, 999);
+        this.menuItemRepository.saveAll(Arrays.asList(pizza1, pizza2, sushi1, sushi2));
 
         // ✅ Create addresses
-        Address address1 = new Address("Customer Lane", "123", "12345", "City");
-        Address address2 = new Address("Another St", "456", "67890", "City");
+        final Address address1 = new Address("Customer Lane", "123", "12345", "City");
+        final Address address2 = new Address("Another St", "456", "67890", "City");
 
         // ✅ Create CustomerOrders with OrderStatus ENUM
-        CustomerOrder order1 = new CustomerOrder(
+        final CustomerOrder order1 = new CustomerOrder(
                 user1,
                 new ArrayList<>(),
                 address1,
@@ -73,7 +73,7 @@ public class DataInitializer implements CommandLineRunner {
                 restaurant1
         );
 
-        CustomerOrder order2 = new CustomerOrder(
+        final CustomerOrder order2 = new CustomerOrder(
                 user1,
                 new ArrayList<>(),
                 address2,
@@ -83,13 +83,13 @@ public class DataInitializer implements CommandLineRunner {
         );
 
         // ✅ Save orders initially to generate order numbers
-        customerOrderRepository.saveAll(Arrays.asList(order1, order2));
+        this.customerOrderRepository.saveAll(Arrays.asList(order1, order2));
 
         // ✅ Create OrderItems and associate with orders
-        OrderItem orderItem1 = new OrderItem(pizza1, 2, order1.getOrderNumber());
-        OrderItem orderItem2 = new OrderItem(pizza2, 1, order1.getOrderNumber());
-        OrderItem orderItem3 = new OrderItem(sushi1, 3, order2.getOrderNumber());
-        OrderItem orderItem4 = new OrderItem(sushi2, 2, order2.getOrderNumber());
+        final OrderItem orderItem1 = new OrderItem(pizza1, 2, order1.getOrderNumber());
+        final OrderItem orderItem2 = new OrderItem(pizza2, 1, order1.getOrderNumber());
+        final OrderItem orderItem3 = new OrderItem(sushi1, 3, order2.getOrderNumber());
+        final OrderItem orderItem4 = new OrderItem(sushi2, 2, order2.getOrderNumber());
 
         // ✅ Attach OrderItems to CustomerOrders
         order1.setOrderItems(List.of(orderItem1, orderItem2));
@@ -102,8 +102,8 @@ public class DataInitializer implements CommandLineRunner {
         sushi2.setInventory(sushi2.getInventory() - orderItem4.getQuantity());
 
         // ✅ Save updated CustomerOrders and MenuItems
-        customerOrderRepository.saveAll(Arrays.asList(order1, order2));
-        menuItemRepository.saveAll(Arrays.asList(pizza1, pizza2, sushi1, sushi2));
+        this.customerOrderRepository.saveAll(Arrays.asList(order1, order2));
+        this.menuItemRepository.saveAll(Arrays.asList(pizza1, pizza2, sushi1, sushi2));
 
         // ✅ Log success message
         System.out.println("Sample data successfully added with encrypted passwords, restaurant associations, order numbers, inventory, slugs, and item quantities!");

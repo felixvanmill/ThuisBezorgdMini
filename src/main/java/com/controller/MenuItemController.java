@@ -17,26 +17,26 @@ public class MenuItemController {
 
     @GetMapping
     public List<MenuItem> getAllMenuItems() {
-        return menuItemService.getAllMenuItems();
+        return this.menuItemService.getAllMenuItems();
     }
 
     @GetMapping("/{id}")
-    public Optional<MenuItem> getMenuItemById(@PathVariable Long id) {
-        return menuItemService.getMenuItemById(id);
+    public Optional<MenuItem> getMenuItemById(@PathVariable final Long id) {
+        return this.menuItemService.getMenuItemById(id);
     }
 
     @PostMapping
-    public MenuItem addMenuItem(@RequestBody MenuItem menuItem) {
-        return menuItemService.addMenuItem(menuItem);
+    public MenuItem addMenuItem(@RequestBody final MenuItem menuItem) {
+        return this.menuItemService.addMenuItem(menuItem);
     }
 
     @PutMapping("/{id}")
-    public MenuItem updateMenuItem(@PathVariable Long id, @RequestBody MenuItem menuItemDetails) {
-        return menuItemService.updateMenuItem(id, menuItemDetails);
+    public MenuItem updateMenuItem(@PathVariable final Long id, @RequestBody final MenuItem menuItemDetails) {
+        return this.menuItemService.updateMenuItem(id, menuItemDetails);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteMenuItem(@PathVariable Long id) {
-        menuItemService.deleteMenuItem(id);
+    public void deleteMenuItem(@PathVariable final Long id) {
+        this.menuItemService.deleteMenuItem(id);
     }
 }

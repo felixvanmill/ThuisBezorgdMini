@@ -37,61 +37,61 @@ public class UserController {
     // Get all users
     @GetMapping
     public List<AppUser> getAllUsers() {
-        return userService.getAllUsers();
+        return this.userService.getAllUsers();
     }
 
     // Get user by ID
     @GetMapping("/{id}")
-    public Optional<AppUser> getUserById(@PathVariable Long id) {
-        return userService.getUserById(id);
+    public Optional<AppUser> getUserById(@PathVariable final Long id) {
+        return this.userService.getUserById(id);
     }
 
     // Register a new user
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody @Valid UserRegistrationDTO userRegistrationDTO) {
-        if (userService.userExists(userRegistrationDTO.getUsername())) {
+    public ResponseEntity<?> registerUser(@RequestBody @Valid final UserRegistrationDTO userRegistrationDTO) {
+        if (this.userService.userExists(userRegistrationDTO.getUsername())) {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Username is already taken");
         }
 
-        AppUser user = new AppUser();
+        final AppUser user = new AppUser();
         user.setUsername(userRegistrationDTO.getUsername());
-        user.setPassword(passwordEncoder.encode(userRegistrationDTO.getPassword())); // Encrypt the password
+        user.setPassword(this.passwordEncoder.encode(userRegistrationDTO.getPassword())); // Encrypt the password
         user.setRole(userRegistrationDTO.getRole());
-        userService.addUser(user);
+        this.userService.addUser(user);
         return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
     }
 
     // Update an existing user
     @PutMapping("/{id}")
-    public AppUser updateUser(@PathVariable Long id, @RequestBody AppUser userDetails) {
-        return userService.updateUser(id, userDetails);
+    public AppUser updateUser(@PathVariable final Long id, @RequestBody final AppUser userDetails) {
+        return this.userService.updateUser(id, userDetails);
     }
 
     // Delete a user
     @DeleteMapping("/{id}")
-    public void deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+    public void deleteUser(@PathVariable final Long id) {
+        this.userService.deleteUser(id);
     }
 
     // Login method - Authenticates user and returns a JWT
     @PostMapping("/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody UserRegistrationDTO authenticationRequest) {
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody final UserRegistrationDTO authenticationRequest) {
         try {
             // Authenticate the user
-            authenticationManager.authenticate(
+            this.authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(authenticationRequest.getUsername(), authenticationRequest.getPassword())
             );
-        } catch (AuthenticationException e) {
+        } catch (final AuthenticationException e) {
             // Return a 401 Unauthorized status if authentication fails
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect username or password");
         }
 
         // Fetch the user from the database after authentication
-        AppUser user = userService.getUserByUsername(authenticationRequest.getUsername())
+        final AppUser user = this.userService.getUserByUsername(authenticationRequest.getUsername())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
         // Generate JWT token
-        final String jwt = jwtTokenUtil.generateToken(authenticationRequest.getUsername(), user.getRole());
+        String jwt = this.jwtTokenUtil.generateToken(authenticationRequest.getUsername(), user.getRole());
 
         // Return the JWT in a response entity
         return ResponseEntity.ok(new JwtResponse(jwt));
@@ -99,8 +99,8 @@ public class UserController {
 
     // Get user by username (for other purposes like retrieving user info)
     @GetMapping("/username/{username}")
-    public ResponseEntity<AppUser> getUserByUsername(@PathVariable String username) {
-        Optional<AppUser> userOptional = userService.getUserByUsername(username);
+    public ResponseEntity<AppUser> getUserByUsername(@PathVariable final String username) {
+        final Optional<AppUser> userOptional = this.userService.getUserByUsername(username);
         if (userOptional.isPresent()) {
             return ResponseEntity.ok(userOptional.get());
         } else {

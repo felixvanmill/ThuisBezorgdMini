@@ -15,18 +15,18 @@ public class RestaurantService {
     private RestaurantRepository restaurantRepository;
 
     public List<Restaurant> getAllRestaurants() {
-        return restaurantRepository.findAll();
+        return this.restaurantRepository.findAll();
     }
 
-    public Optional<Restaurant> getRestaurantById(Long id) {
-        return restaurantRepository.findById(id);
+    public Optional<Restaurant> getRestaurantById(final Long id) {
+        return this.restaurantRepository.findById(id);
     }
 
-    public Restaurant addRestaurant(Restaurant restaurant) {
-        return restaurantRepository.save(restaurant);
+    public Restaurant addRestaurant(final Restaurant restaurant) {
+        return this.restaurantRepository.save(restaurant);
     }
 
-    public void deleteRestaurant(Long id) {
-        restaurantRepository.deleteById(id);
+    public void deleteRestaurant(final Long id) {
+        this.restaurantRepository.deleteById(id);
     }
 }

@@ -17,26 +17,26 @@ public class OrderController {
 
     @GetMapping
     public List<CustomerOrder> getAllOrders() {
-        return orderService.getAllOrders();
+        return this.orderService.getAllOrders();
     }
 
     @GetMapping("/{id}")
-    public Optional<CustomerOrder> getOrderById(@PathVariable Long id) {
-        return orderService.getOrderById(id);
+    public Optional<CustomerOrder> getOrderById(@PathVariable final Long id) {
+        return this.orderService.getOrderById(id);
     }
 
     @PostMapping
-    public CustomerOrder addOrder(@RequestBody CustomerOrder order) {
-        return orderService.addOrder(order);
+    public CustomerOrder addOrder(@RequestBody final CustomerOrder order) {
+        return this.orderService.addOrder(order);
     }
 
     @PutMapping("/{id}")
-    public CustomerOrder updateOrderStatus(@PathVariable Long id, @RequestParam String status) {
-        return orderService.updateOrderStatus(id, status);
+    public CustomerOrder updateOrderStatus(@PathVariable final Long id, @RequestParam final String status) {
+        return this.orderService.updateOrderStatus(id, status);
     }
 
     @DeleteMapping("/{id}")
-    public void deleteOrder(@PathVariable Long id) {
-        orderService.deleteOrder(id);
+    public void deleteOrder(@PathVariable final Long id) {
+        this.orderService.deleteOrder(id);
     }
 }

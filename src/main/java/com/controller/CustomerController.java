@@ -36,29 +36,29 @@ public class CustomerController {
 
     // ✅ Serve customer home page on /customer/home
     @GetMapping("/home")
-    public String customerHome(Model model) {
+    public String customerHome(final Model model) {
         model.addAttribute("welcomeMessage", "Welcome to the Customer Dashboard!");
         return "customer/customer"; // Renders templates/customer/customer.html
     }
 
     // ✅ Show all available restaurants
     @GetMapping("/restaurants")
-    public String getAllRestaurants(Model model) {
-        List<Restaurant> restaurants = restaurantRepository.findAll();
+    public String getAllRestaurants(final Model model) {
+        final List<Restaurant> restaurants = this.restaurantRepository.findAll();
         model.addAttribute("restaurants", restaurants);
         return "customer/restaurants";  // Renders the restaurant selection view
     }
 
     // ✅ Show menu items for a specific restaurant by slug
     @GetMapping("/restaurant/{slug}/menu")
-    public String getMenuItemsBySlug(@PathVariable String slug, Model model) {
+    public String getMenuItemsBySlug(@PathVariable final String slug, final Model model) {
         // Find restaurant by slug
-        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+        final Restaurant restaurant = this.restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
         // Fetch menu items with inventory > 0
-        List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
-        menuItems.removeIf(menuItem -> menuItem.getInventory() <= 0); // Remove items with zero inventory
+        final List<MenuItem> menuItems = this.menuItemRepository.findByRestaurant_Id(restaurant.getId());
+        menuItems.removeIf(menuItem -> 0 >= menuItem.getInventory()); // Remove items with zero inventory
 
         model.addAttribute("menuItems", menuItems);
         model.addAttribute("restaurantId", restaurant.getId());
@@ -70,30 +70,30 @@ public class CustomerController {
 
     // ✅ Submit an order
     @PostMapping("/restaurant/{slug}/order")
-    public String submitOrder(@PathVariable String slug,
-                              @RequestParam Map<String, String> menuItemQuantities,
-                              Model model) {
+    public String submitOrder(@PathVariable final String slug,
+                              @RequestParam final Map<String, String> menuItemQuantities,
+                              final Model model) {
         // Find the restaurant by slug
-        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+        final Restaurant restaurant = this.restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
         // Authentication and user retrieval
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String username = authentication.getName();
-        AppUser customer = appUserRepository.findByUsername(username)
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        final String username = authentication.getName();
+        final AppUser customer = this.appUserRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         // Parse the menuItemQuantities Map
-        List<OrderItem> orderItems = new ArrayList<>();
-        List<String> inventoryErrors = new ArrayList<>();
+        final List<OrderItem> orderItems = new ArrayList<>();
+        final List<String> inventoryErrors = new ArrayList<>();
 
-        for (Map.Entry<String, String> entry : menuItemQuantities.entrySet()) {
+        for (final Map.Entry<String, String> entry : menuItemQuantities.entrySet()) {
             try {
-                Long menuItemId = Long.parseLong(entry.getKey().replaceAll("[^\\d]", ""));  // Ensure key is numeric
-                int quantity = Integer.parseInt(entry.getValue());
+                final Long menuItemId = Long.parseLong(entry.getKey().replaceAll("[^\\d]", ""));  // Ensure key is numeric
+                final int quantity = Integer.parseInt(entry.getValue());
 
-                if (quantity > 0) {  // Only add items with quantity greater than 0
-                    MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                if (0 < quantity) {  // Only add items with quantity greater than 0
+                    final MenuItem menuItem = this.menuItemRepository.findById(menuItemId)
                             .orElseThrow(() -> new RuntimeException("Menu item not found for ID: " + menuItemId));
 
                     if (menuItem.getInventory() < quantity) {
@@ -104,11 +104,11 @@ public class CustomerController {
 
                     // Reduce inventory temporarily
                     menuItem.reduceInventory(quantity);
-                    menuItemRepository.save(menuItem);
+                    this.menuItemRepository.save(menuItem);
 
                     orderItems.add(new OrderItem(menuItem, quantity, null)); // Initialize with null for order number
                 }
-            } catch (NumberFormatException e) {
+            } catch (final NumberFormatException e) {
                 System.out.println("Skipping invalid key or quantity: " + entry);
             }
         }
@@ -118,8 +118,8 @@ public class CustomerController {
             model.addAttribute("errorMessage", "Some items could not be ordered due to insufficient inventory:");
             model.addAttribute("inventoryErrors", inventoryErrors);
 
-            List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
-            menuItems.removeIf(menuItem -> menuItem.getInventory() <= 0);
+            final List<MenuItem> menuItems = this.menuItemRepository.findByRestaurant_Id(restaurant.getId());
+            menuItems.removeIf(menuItem -> 0 >= menuItem.getInventory());
 
             model.addAttribute("menuItems", menuItems);
             model.addAttribute("restaurantId", restaurant.getId());
@@ -130,13 +130,13 @@ public class CustomerController {
         }
 
         // Calculate the total price directly
-        double totalPrice = orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
+        final double totalPrice = orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
 
         // Retrieve the address associated with the customer
-        Address customerAddress = customer.getAddress(); // Ensure AppUser has a getAddress method
+        final Address customerAddress = customer.getAddress(); // Ensure AppUser has a getAddress method
 
         // Use the existing address when creating the order
-        CustomerOrder newOrder = new CustomerOrder(
+        final CustomerOrder newOrder = new CustomerOrder(
                 customer,
                 orderItems,
                 customerAddress,
@@ -148,7 +148,7 @@ public class CustomerController {
         // Set order number for each OrderItem
         orderItems.forEach(orderItem -> orderItem.setOrderNumber(newOrder.getOrderNumber()));
 
-        customerOrderRepository.save(newOrder);
+        this.customerOrderRepository.save(newOrder);
 
         // Add orderNumber to the model for display in confirmation
         model.addAttribute("orderNumber", newOrder.getOrderNumber());

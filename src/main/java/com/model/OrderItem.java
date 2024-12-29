@@ -22,40 +22,32 @@ public class OrderItem {
 
     public OrderItem() {}
 
-    public OrderItem(MenuItem menuItem, int quantity, String orderNumber) {
+    public OrderItem(final MenuItem menuItem, final int quantity, final String orderNumber) {
         this.menuItem = menuItem;
         this.quantity = quantity;
         this.orderNumber = orderNumber;
     }
 
     public double getTotalPrice() {
-        return menuItem.getPrice() * quantity;
+        return this.menuItem.getPrice() * this.quantity;
     }
 
     // Getters and setters
 
     public Long getId() {
-        return id;
+        return this.id;
     }
 
     public MenuItem getMenuItem() {
-        return menuItem;
-    }
-
-    public void setMenuItem(MenuItem menuItem) {
-        this.menuItem = menuItem;
+        return this.menuItem;
     }
 
     public int getQuantity() {
-        return quantity;
-    }
-
-    public void setQuantity(int quantity) {
-        this.quantity = quantity;
+        return this.quantity;
     }
 
     public String getOrderNumber() {
-        return orderNumber;
+        return this.orderNumber;
     }
 
     public void setOrderNumber(String orderNumber) {

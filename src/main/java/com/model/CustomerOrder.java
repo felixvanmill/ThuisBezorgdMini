@@ -40,12 +40,12 @@ public class CustomerOrder {
 
     // Default constructor
     public CustomerOrder() {
-        this.orderNumber = generateOrderNumber();
+        orderNumber = this.generateOrderNumber();
     }
 
     // Constructor to initialize all fields
-    public CustomerOrder(AppUser user, List<OrderItem> orderItems, Address address, OrderStatus status, double totalPrice, Restaurant restaurant) {
-        this.orderNumber = generateOrderNumber();
+    public CustomerOrder(final AppUser user, final List<OrderItem> orderItems, final Address address, final OrderStatus status, final double totalPrice, final Restaurant restaurant) {
+        orderNumber = this.generateOrderNumber();
         this.user = user;
         this.orderItems = orderItems;
         this.address = address;
@@ -61,65 +61,57 @@ public class CustomerOrder {
 
     // Calculate total price from order items
     public double calculateTotalPrice() {
-        return orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
+        return this.orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
     }
 
     // Getters and Setters
     public Long getId() {
-        return id;
+        return this.id;
     }
 
     public String getOrderNumber() {
-        return orderNumber;
-    }
-
-    public void setOrderNumber(String orderNumber) {
-        this.orderNumber = orderNumber;
+        return this.orderNumber;
     }
 
     public AppUser getUser() {
-        return user;
+        return this.user;
     }
 
-    public void setUser(AppUser user) {
+    public void setUser(final AppUser user) {
         this.user = user;
     }
 
     public List<OrderItem> getOrderItems() {
-        return orderItems;
+        return this.orderItems;
     }
 
-    public void setOrderItems(List<OrderItem> orderItems) {
-        orderItems.forEach(item -> item.setOrderNumber(this.orderNumber));
+    public void setOrderItems(final List<OrderItem> orderItems) {
+        orderItems.forEach(item -> item.setOrderNumber(orderNumber));
         this.orderItems = orderItems;
-        this.totalPrice = calculateTotalPrice();
+        totalPrice = this.calculateTotalPrice();
     }
 
     public double getTotalPrice() {
-        return totalPrice;
+        return this.totalPrice;
     }
 
     public Address getAddress() {
-        return address;
-    }
-
-    public void setAddress(Address address) {
-        this.address = address;
+        return this.address;
     }
 
     public OrderStatus getStatus() {
-        return status;
+        return this.status;
     }
 
-    public void setStatus(OrderStatus status) {
+    public void setStatus(final OrderStatus status) {
         this.status = status;
     }
 
     public Restaurant getRestaurant() {
-        return restaurant;
+        return this.restaurant;
     }
 
-    public void setRestaurant(Restaurant restaurant) {
+    public void setRestaurant(final Restaurant restaurant) {
         this.restaurant = restaurant;
     }
 }

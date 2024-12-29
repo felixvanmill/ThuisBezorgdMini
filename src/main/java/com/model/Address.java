@@ -17,7 +17,7 @@ public class Address {
     public Address() {
     }
 
-    public Address(String streetName, String houseNumber, String postalCode, String city) {
+    public Address(final String streetName, final String houseNumber, final String postalCode, final String city) {
         this.streetName = streetName;
         this.houseNumber = houseNumber;
         this.postalCode = postalCode;
@@ -26,47 +26,47 @@ public class Address {
 
     // Getters and Setters
     public Long getId() {
-        return id;
+        return this.id;
     }
 
-    public void setId(Long id) {
+    public void setId(final Long id) {
         this.id = id;
     }
 
     public String getStreetName() {
-        return streetName;
+        return this.streetName;
     }
 
-    public void setStreetName(String streetName) {
+    public void setStreetName(final String streetName) {
         this.streetName = streetName;
     }
 
     public String getHouseNumber() {
-        return houseNumber;
+        return this.houseNumber;
     }
 
-    public void setHouseNumber(String houseNumber) {
+    public void setHouseNumber(final String houseNumber) {
         this.houseNumber = houseNumber;
     }
 
     public String getPostalCode() {
-        return postalCode;
+        return this.postalCode;
     }
 
-    public void setPostalCode(String postalCode) {
+    public void setPostalCode(final String postalCode) {
         this.postalCode = postalCode;
     }
 
     public String getCity() {
-        return city;
+        return this.city;
     }
 
-    public void setCity(String city) {
+    public void setCity(final String city) {
         this.city = city;
     }
 
     public String getFullAddress() {
-        return streetName + " " + houseNumber + ", " + postalCode + " " + city;
+        return this.streetName + " " + this.houseNumber + ", " + this.postalCode + " " + this.city;
     }
 
 }

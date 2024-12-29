@@ -21,18 +21,18 @@ public class DeliveryController {
 
     // ✅ Serve the allOrders page to display relevant orders
     @GetMapping("/allOrders")
-    public String getAllOrders(Model model) {
+    public String getAllOrders(final Model model) {
         // Fetch orders with relevant statuses
-        List<OrderStatus> statuses = List.of(
+        final List<OrderStatus> statuses = List.of(
                 OrderStatus.READY_FOR_DELIVERY,
                 OrderStatus.PICKING_UP,
                 OrderStatus.TRANSPORT
         );
 
-        List<CustomerOrder> orders = customerOrderRepository.findByStatusesWithDetails(statuses);
+        final List<CustomerOrder> orders = this.customerOrderRepository.findByStatusesWithDetails(statuses);
 
         // Add data to the model
-        String username = getLoggedInUsername();
+        final String username = this.getLoggedInUsername();
         model.addAttribute("username", username);
         model.addAttribute("orders", orders);
 
@@ -41,15 +41,15 @@ public class DeliveryController {
 
     // ✅ Update order status action
     @PostMapping("/orders/{orderId}/updateStatus")
-    public String updateOrderStatus(@PathVariable Long orderId, @RequestParam String status) {
-        CustomerOrder order = customerOrderRepository.findById(orderId)
+    public String updateOrderStatus(@PathVariable final Long orderId, @RequestParam final String status) {
+        final CustomerOrder order = this.customerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
 
         try {
-            OrderStatus orderStatus = OrderStatus.valueOf(status); // Convert String to Enum
+            final OrderStatus orderStatus = OrderStatus.valueOf(status); // Convert String to Enum
             order.setStatus(orderStatus);
-            customerOrderRepository.save(order);
-        } catch (IllegalArgumentException e) {
+            this.customerOrderRepository.save(order);
+        } catch (final IllegalArgumentException e) {
             throw new RuntimeException("Invalid status value: " + status);
         }
 
@@ -58,7 +58,7 @@ public class DeliveryController {
 
     // ✅ Utility method to get logged-in username
     private String getLoggedInUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
     }
 }

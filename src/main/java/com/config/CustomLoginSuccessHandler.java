@@ -15,19 +15,19 @@ import java.util.Collection;
 public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
 
     @Override
-    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
-        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+    public void onAuthenticationSuccess(final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication) throws IOException, ServletException {
+        final Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
 
         String redirectUrl = "/dashboard"; // Default fallback URL
 
-        for (GrantedAuthority authority : authorities) {
-            if (authority.getAuthority().equals("ROLE_CUSTOMER")) {
+        for (final GrantedAuthority authority : authorities) {
+            if ("ROLE_CUSTOMER".equals(authority.getAuthority())) {
                 redirectUrl = "/customer/home";
                 break;
-            } else if (authority.getAuthority().equals("ROLE_RESTAURANT_EMPLOYEE")) {
+            } else if ("ROLE_RESTAURANT_EMPLOYEE".equals(authority.getAuthority())) {
                 redirectUrl = "/restaurant/management";
                 break;
-            } else if (authority.getAuthority().equals("ROLE_DELIVERY_PERSON")) {
+            } else if ("ROLE_DELIVERY_PERSON".equals(authority.getAuthority())) {
                 redirectUrl = "/delivery/allOrders";
                 break;
             }

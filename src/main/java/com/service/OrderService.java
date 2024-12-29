@@ -16,33 +16,33 @@ public class OrderService {
     private CustomerOrderRepository orderRepository;
 
     public List<CustomerOrder> getAllOrders() {
-        return orderRepository.findAll();
+        return this.orderRepository.findAll();
     }
 
-    public Optional<CustomerOrder> getOrderById(Long id) {
-        return orderRepository.findById(id);
+    public Optional<CustomerOrder> getOrderById(final Long id) {
+        return this.orderRepository.findById(id);
     }
 
-    public CustomerOrder addOrder(CustomerOrder order) {
-        return orderRepository.save(order);
+    public CustomerOrder addOrder(final CustomerOrder order) {
+        return this.orderRepository.save(order);
     }
 
-    public CustomerOrder updateOrderStatus(Long id, String status) {
-        Optional<CustomerOrder> orderOptional = orderRepository.findById(id);
+    public CustomerOrder updateOrderStatus(final Long id, final String status) {
+        final Optional<CustomerOrder> orderOptional = this.orderRepository.findById(id);
         if (orderOptional.isPresent()) {
-            CustomerOrder order = orderOptional.get();
+            final CustomerOrder order = orderOptional.get();
             try {
-                OrderStatus orderStatus = OrderStatus.valueOf(status); // Convert String to Enum
+                final OrderStatus orderStatus = OrderStatus.valueOf(status); // Convert String to Enum
                 order.setStatus(orderStatus);
-                return orderRepository.save(order);
-            } catch (IllegalArgumentException e) {
+                return this.orderRepository.save(order);
+            } catch (final IllegalArgumentException e) {
                 throw new RuntimeException("Invalid OrderStatus: " + status);
             }
         }
         throw new RuntimeException("Order not found with ID: " + id);
     }
 
-    public void deleteOrder(Long id) {
-        orderRepository.deleteById(id);
+    public void deleteOrder(final Long id) {
+        this.orderRepository.deleteById(id);
     }
 }

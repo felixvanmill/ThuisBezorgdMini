@@ -35,7 +35,7 @@ public class AppUser {
     }
 
     // Constructor for creating a user without a restaurant association
-    public AppUser(String username, String password, String role, String fullName) {
+    public AppUser(final String username, final String password, final String role, final String fullName) {
         this.username = username;
         this.password = password;
         this.role = role;
@@ -43,7 +43,7 @@ public class AppUser {
     }
 
     // Constructor for creating a user with a restaurant association
-    public AppUser(String username, String password, String role, String fullName, Restaurant restaurant) {
+    public AppUser(final String username, final String password, final String role, final String fullName, final Restaurant restaurant) {
         this.username = username;
         this.password = password;
         this.role = role;
@@ -53,57 +53,57 @@ public class AppUser {
 
     // Getters and Setters
     public Long getId() {
-        return id;
+        return this.id;
     }
 
-    public void setId(Long id) {
+    public void setId(final Long id) {
         this.id = id;
     }
 
     public String getUsername() {
-        return username;
+        return this.username;
     }
 
-    public void setUsername(String username) {
+    public void setUsername(final String username) {
         this.username = username;
     }
 
     public String getPassword() {
-        return password;
+        return this.password;
     }
 
-    public void setPassword(String password) {
+    public void setPassword(final String password) {
         this.password = password;
     }
 
     public String getRole() {
-        return role;
+        return this.role;
     }
 
-    public void setRole(String role) {
+    public void setRole(final String role) {
         this.role = role;
     }
 
     public String getFullName() {
-        return fullName;
+        return this.fullName;
     }
 
-    public void setFullName(String fullName) {
+    public void setFullName(final String fullName) {
         this.fullName = fullName;
     }
 
     public Restaurant getRestaurant() {
-        return restaurant;
+        return this.restaurant;
     }
 
-    public void setRestaurant(Restaurant restaurant) {
+    public void setRestaurant(final Restaurant restaurant) {
         this.restaurant = restaurant;
     }
     public Address getAddress() {
-        return address;
+        return this.address;
     }
 
-    public void setAddress(Address address) {
+    public void setAddress(final Address address) {
         this.address = address;
     }
 
