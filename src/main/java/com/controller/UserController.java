@@ -2,7 +2,7 @@ package com.controller;
 
 import com.model.AppUser;
 import com.model.UserRole;
-import com.model.UserRegistrationDTO;
+import com.dto.UserRegistrationDTO;
 import com.response.JwtResponse;
 import com.security.JwtTokenUtil;
 import com.service.UserService;
@@ -12,7 +12,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 import jakarta.validation.Valid;
