@@ -3,116 +3,62 @@
 <head>
   <title>Menu</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 20px;
-    }
-    h1 {
-      text-align: center;
-      color: #333;
-    }
     table {
       width: 100%;
       border-collapse: collapse;
-      margin: 20px 0;
     }
-    table th, table td {
+    th, td {
       border: 1px solid #ddd;
       padding: 8px;
-      text-align: left;
+      text-align: center;
     }
-    table th {
-      background-color: #f4f4f4;
-      color: #333;
-    }
-    .quantity-input {
-      width: 60px;
-    }
-    .place-order-btn {
-      margin-top: 20px;
-      display: block;
-      width: 100%;
-      padding: 10px;
-      background-color: #007bff;
-      color: white;
-      border: none;
-      cursor: pointer;
-      font-size: 16px;
-    }
-    .place-order-btn:hover {
-      background-color: #0056b3;
-    }
-    .status-available {
-      color: green;
-      font-weight: bold;
-    }
-    .status-limited {
-      color: orange;
-      font-weight: bold;
+    th {
+      background-color: #f2f2f2;
     }
     .error-message {
       color: red;
-      font-weight: bold;
-      margin: 20px 0;
-    }
-    .success-message {
-      color: green;
-      font-weight: bold;
-      margin: 20px 0;
+      margin-bottom: 20px;
     }
   </style>
 </head>
 <body>
-<h1>Menu for <span th:text="${restaurantName}">Restaurant</span></h1>
+<!-- Restaurant Title -->
+<h1 th:if="${restaurant != null}" th:text="'Menu for ' + ${restaurant.name}">Menu for Restaurant</h1>
+<h1 th:if="${restaurant == null}">Restaurant not found</h1>
 
-<!-- Display error messages if any -->
+<!-- Display Error Messages -->
 <div th:if="${errorMessage}" class="error-message">
   <p th:text="${errorMessage}"></p>
-  <ul>
+  <ul th:if="${inventoryErrors != null and !inventoryErrors.isEmpty()}">
     <li th:each="error : ${inventoryErrors}" th:text="${error}"></li>
   </ul>
 </div>
 
-<!-- Display success message if available -->
-<div th:if="${message}" class="success-message">
-  <p th:text="${message}"></p>
-</div>
-
+<!-- Order Form -->
 <form th:action="@{/customer/restaurant/{slug}/order(slug=${restaurantSlug})}" method="post">
   <table>
     <thead>
     <tr>
-      <th>Item Name</th>
+      <th>Item</th>
       <th>Description</th>
       <th>Price</th>
-      <th>Availability</th>
+      <th>Inventory</th>
       <th>Quantity</th>
     </tr>
     </thead>
     <tbody>
-    <tr th:each="menuItem : ${menuItems}">
-      <td th:text="${menuItem.name}">Item Name</td>
-      <td th:text="${menuItem.description}">Description</td>
-      <td th:text="'$' + ${menuItem.price}">Price</td>
+    <tr th:each="item : ${menuItems}">
+      <td th:text="${item.name}">Item Name</td>
+      <td th:text="${item.description}">Item Description</td>
+      <td th:text="${item.price}">Item Price</td>
+      <td th:text="${item.inventory}">Item Inventory</td>
       <td>
-        <span th:if="${menuItem.inventory > 10}" class="status-available">Available</span>
-        <span th:if="${menuItem.inventory <= 10 && menuItem.inventory > 0}" class="status-limited">Limited Availability</span>
-        <span th:if="${menuItem.inventory == 0}" class="status-limited">Out of Stock</span>
-      </td>
-      <td>
-        <input type="number"
-               th:name="'menuItemQuantities[' + ${menuItem.id} + ']'"
-               min="0"
-               th:max="${menuItem.inventory}"
-               value="0"
-               class="quantity-input"
-               th:disabled="${menuItem.inventory == 0}" />
+        <input type="number" th:name="|menuItemQuantities[${item.id}]|" min="0" th:max="${item.inventory}" value="0">
       </td>
     </tr>
     </tbody>
   </table>
-  <button type="submit" class="place-order-btn">Place Order</button>
+  <button type="submit">Place Order</button>
 </form>
-
 </body>
 </html>

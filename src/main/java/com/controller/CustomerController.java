@@ -1,25 +1,25 @@
 package com.controller;
 
 import com.model.*;
-import com.repository.AppUserRepository;
-import com.repository.CustomerOrderRepository;
-import com.repository.MenuItemRepository;
-import com.repository.RestaurantRepository;
+import com.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.logging.Logger;
 
-/**
- * Controller for managing customer-specific actions.
- * Provides functionality for browsing restaurants, viewing menus, and placing orders.
- */
 @Controller
 @RequestMapping("/customer")
 public class CustomerController {
@@ -36,155 +36,207 @@ public class CustomerController {
     @Autowired
     private AppUserRepository appUserRepository;
 
-    /**
-     * Serve the customer home page.
-     *
-     * @param model The model to pass attributes to the view.
-     * @return The view for the customer dashboard.
-     */
+    @PersistenceContext
+    private EntityManager entityManager;
+
+    private static final Logger logger = Logger.getLogger(CustomerController.class.getName());
+
     @GetMapping("/home")
     public String customerHome(final Model model) {
         model.addAttribute("welcomeMessage", "Welcome to the Customer Dashboard!");
-        return "customer/customer"; // Renders templates/customer/customer.html
+        return "customer/customer";
     }
 
-    /**
-     * Display all available restaurants.
-     *
-     * @param model The model to pass attributes to the view.
-     * @return The view for the restaurant list.
-     */
     @GetMapping("/restaurants")
     public String getAllRestaurants(final Model model) {
-        final List<Restaurant> restaurants = this.restaurantRepository.findAll();
+        List<Restaurant> restaurants = restaurantRepository.findAll();
         model.addAttribute("restaurants", restaurants);
-        return "customer/restaurants"; // Renders the restaurant selection view
+        return "customer/restaurants";
     }
 
-    /**
-     * Show menu items for a specific restaurant identified by its slug.
-     *
-     * @param slug  The slug of the restaurant.
-     * @param model The model to pass attributes to the view.
-     * @return The view displaying the restaurant menu.
-     */
     @GetMapping("/restaurant/{slug}/menu")
     public String getMenuItemsBySlug(@PathVariable final String slug, final Model model) {
-        // Find the restaurant by slug
-        final Restaurant restaurant = this.restaurantRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+        logger.info("Fetching restaurant menu for slug: " + slug);
 
-        // Fetch menu items with inventory > 0
-        final List<MenuItem> menuItems = this.menuItemRepository.findByRestaurant_Id(restaurant.getId());
-        menuItems.removeIf(menuItem -> 0 >= menuItem.getInventory()); // Remove out-of-stock items
+        Optional<Restaurant> restaurantOpt = restaurantRepository.findBySlug(slug);
+
+        if (restaurantOpt.isEmpty()) {
+            logger.warning("Restaurant not found for slug: " + slug);
+            model.addAttribute("errorMessage", "Restaurant not found for slug: " + slug);
+            return "customer/error"; // Ensure this template exists.
+        }
+
+        Restaurant restaurant = restaurantOpt.get();
+        logger.info("Restaurant found: " + restaurant.getName());
+
+        List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
+        if (menuItems.isEmpty()) {
+            logger.warning("No menu items available for restaurant: " + restaurant.getName());
+        }
+
+        menuItems.removeIf(menuItem -> menuItem.getInventory() <= 0);
 
         model.addAttribute("menuItems", menuItems);
-        model.addAttribute("restaurantId", restaurant.getId());
-        model.addAttribute("restaurantName", restaurant.getName());
-        model.addAttribute("restaurantSlug", restaurant.getSlug()); // Add slug to model
+        model.addAttribute("restaurant", restaurant);
+        model.addAttribute("restaurantSlug", slug);
 
-        return "customer/menu"; // Renders the menu view
+        logger.info("Successfully loaded menu for restaurant: " + restaurant.getName());
+        return "customer/menu";
     }
 
-    /**
-     * Submit an order for a specific restaurant.
-     *
-     * @param slug               The slug of the restaurant.
-     * @param menuItemQuantities A map of menu item IDs to quantities.
-     * @param model              The model to pass attributes to the view.
-     * @return The view displaying the order confirmation or returning to the menu with errors.
-     */
     @PostMapping("/restaurant/{slug}/order")
-    public String submitOrder(@PathVariable final String slug,
-                              @RequestParam final Map<String, String> menuItemQuantities,
-                              final Model model) {
-        // Find the restaurant by slug
-        final Restaurant restaurant = this.restaurantRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+    @Transactional
+    public String submitOrder(@PathVariable String slug,
+                              @RequestParam Map<String, String> menuItemQuantities,
+                              Model model) {
+        StringBuilder debugLogs = new StringBuilder();
+        try {
+            debugLogs.append("Processing order for restaurant slug: ").append(slug).append("\n");
+            debugLogs.append("Received menu item quantities: ").append(menuItemQuantities).append("\n");
 
-        // Retrieve the authenticated user
-        final Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        final String username = authentication.getName();
-        final AppUser customer = this.appUserRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+            // Fetch and validate restaurant
+            Restaurant restaurant = validateRestaurant(slug, debugLogs);
 
-        // Parse the menuItemQuantities map and validate inventory
-        final List<OrderItem> orderItems = new ArrayList<>();
-        final List<String> inventoryErrors = new ArrayList<>();
+            // Get authenticated user
+            AppUser customer = validateCustomer(debugLogs);
 
-        for (final Map.Entry<String, String> entry : menuItemQuantities.entrySet()) {
-            try {
-                // Parse menu item ID and quantity from the input map
-                final Long menuItemId = Long.parseLong(entry.getKey().replaceAll("[^\\d]", ""));
-                final int quantity = Integer.parseInt(entry.getValue());
+            // Validate customer address
+            validateCustomerAddress(customer, debugLogs);
 
-                if (quantity > 0) { // Only process valid quantities
-                    final MenuItem menuItem = this.menuItemRepository.findById(menuItemId)
-                            .orElseThrow(() -> new RuntimeException("Menu item not found for ID: " + menuItemId));
+            // Parse menu item IDs from keys like "menuItemQuantities[1]"
+            Map<Long, Integer> parsedQuantities = new HashMap<>();
+            for (Map.Entry<String, String> entry : menuItemQuantities.entrySet()) {
+                String rawKey = entry.getKey();
+                String rawValue = entry.getValue();
 
-                    // Validate inventory
-                    if (menuItem.getInventory() < quantity) {
-                        inventoryErrors.add("Not enough inventory for: " + menuItem.getName() +
-                                " (Available: " + menuItem.getInventory() + ", Requested: " + quantity + ")");
-                        continue;
-                    }
-
-                    // Temporarily reduce inventory
-                    menuItem.reduceInventory(quantity);
-                    this.menuItemRepository.save(menuItem);
-
-                    // Add the order item
-                    orderItems.add(new OrderItem(menuItem, quantity, null)); // Order number is set later
+                // Extract the ID from "menuItemQuantities[<id>]"
+                if (rawKey.matches("menuItemQuantities\\[(\\d+)\\]")) {
+                    Long menuItemId = Long.parseLong(rawKey.replaceAll("\\D", ""));
+                    int quantity = Integer.parseInt(rawValue);
+                    parsedQuantities.put(menuItemId, quantity);
+                } else {
+                    debugLogs.append("Invalid key format: ").append(rawKey).append("\n");
                 }
-            } catch (final NumberFormatException e) {
-                System.out.println("Skipping invalid key or quantity: " + entry);
             }
-        }
 
-        // Handle inventory errors
-        if (!inventoryErrors.isEmpty()) {
-            model.addAttribute("errorMessage", "Some items could not be ordered due to insufficient inventory:");
-            model.addAttribute("inventoryErrors", inventoryErrors);
+            // Process parsed quantities
+            List<OrderItem> orderItems = new ArrayList<>();
+            List<String> inventoryErrors = processOrderItems(parsedQuantities, orderItems, debugLogs);
 
-            // Reload menu for the restaurant
-            final List<MenuItem> menuItems = this.menuItemRepository.findByRestaurant_Id(restaurant.getId());
-            menuItems.removeIf(menuItem -> 0 >= menuItem.getInventory());
+            // Handle inventory errors
+            if (!inventoryErrors.isEmpty()) {
+                debugLogs.append("Inventory errors: ").append(inventoryErrors).append("\n");
+                handleOrderErrors(model, restaurant, slug, inventoryErrors, debugLogs);
+                return "customer/menu";
+            }
 
-            model.addAttribute("menuItems", menuItems);
-            model.addAttribute("restaurantId", restaurant.getId());
+            if (orderItems.isEmpty()) {
+                debugLogs.append("No valid items selected for the order.\n");
+                throw new RuntimeException("No items selected for the order.");
+            }
+
+            // Create and save order
+            double totalPrice = orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
+            CustomerOrder newOrder = createOrder(customer, restaurant, orderItems, totalPrice);
+            debugLogs.append("Order created successfully. Order Number: ").append(newOrder.getOrderNumber()).append("\n");
+
+            // Add success attributes to model
+            model.addAttribute("orderNumber", newOrder.getOrderNumber());
+            model.addAttribute("totalPrice", totalPrice);
             model.addAttribute("restaurantName", restaurant.getName());
-            model.addAttribute("restaurantSlug", restaurant.getSlug());
+            model.addAttribute("message", "Your order has been placed successfully!");
+            model.addAttribute("debugLogs", debugLogs.toString());
+            return "customer/orderConfirmation";
 
-            return "customer/menu"; // Return to menu with errors
+        } catch (Exception ex) {
+            debugLogs.append("Error while processing order: ").append(ex.getMessage()).append("\n");
+            model.addAttribute("errorMessage", "An error occurred while placing your order. Please try again.");
+            model.addAttribute("debugLogs", debugLogs.toString());
+            return "customer/error";
+        }
+    }
+
+    private Restaurant validateRestaurant(String slug, StringBuilder debugLogs) {
+        return restaurantRepository.findBySlug(slug)
+                .orElseThrow(() -> {
+                    debugLogs.append("Restaurant not found for slug: ").append(slug).append("\n");
+                    return new RuntimeException("Restaurant not found for slug: " + slug);
+                });
+    }
+
+    private AppUser validateCustomer(StringBuilder debugLogs) {
+        AppUser customer = getAuthenticatedCustomer();
+        debugLogs.append("Authenticated customer: ").append(customer.getUsername()).append("\n");
+        return customer;
+    }
+
+    private void validateCustomerAddress(AppUser customer, StringBuilder debugLogs) {
+        if (customer.getAddress() == null) {
+            debugLogs.append("Customer address is missing.\n");
+            throw new RuntimeException("Customer address is required to place an order.");
+        }
+    }
+
+    private List<String> processOrderItems(Map<Long, Integer> parsedQuantities, List<OrderItem> orderItems, StringBuilder debugLogs) {
+        List<String> inventoryErrors = new ArrayList<>();
+
+        parsedQuantities.forEach((menuItemId, quantity) -> {
+            try {
+                if (quantity <= 0) return;
+
+                MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                        .orElseThrow(() -> new RuntimeException("Menu item not found for ID: " + menuItemId));
+
+                if (menuItem.getInventory() < quantity) {
+                    inventoryErrors.add(menuItem.getName() + " is out of stock (Available: " + menuItem.getInventory() + ").");
+                    return;
+                }
+
+                menuItem.reduceInventory(quantity);
+                menuItemRepository.save(menuItem);
+                orderItems.add(new OrderItem(menuItem, quantity, null));
+            } catch (Exception e) {
+                inventoryErrors.add("Error processing item with ID: " + menuItemId + ". " + e.getMessage());
+            }
+        });
+
+        return inventoryErrors;
+    }
+
+    private void handleOrderErrors(Model model, Restaurant restaurant, String slug, List<String> inventoryErrors, StringBuilder debugLogs) {
+        model.addAttribute("errorMessage", "Some items could not be ordered due to inventory issues.");
+        model.addAttribute("inventoryErrors", inventoryErrors);
+
+        List<MenuItem> menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
+        menuItems.removeIf(menuItem -> menuItem.getInventory() <= 0);
+
+        model.addAttribute("menuItems", menuItems);
+        model.addAttribute("restaurantSlug", slug);
+        model.addAttribute("restaurantName", restaurant.getName());
+        model.addAttribute("debugLogs", debugLogs.toString());
+    }
+
+    private CustomerOrder createOrder(AppUser customer, Restaurant restaurant, List<OrderItem> orderItems, double totalPrice) {
+        // Re-fetch or merge Address to ensure it's attached to the session
+        Address managedAddress = entityManager.merge(customer.getAddress());
+
+        // Create the order
+        CustomerOrder order = new CustomerOrder(customer, orderItems, managedAddress, OrderStatus.UNCONFIRMED, totalPrice, restaurant);
+
+        // Assign order number to order items
+        orderItems.forEach(item -> item.setOrderNumber(order.getOrderNumber()));
+
+        // Save the order
+        return customerOrderRepository.save(order);
+    }
+
+    private AppUser getAuthenticatedCustomer() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new RuntimeException("No authenticated user found.");
         }
 
-        // Calculate the total price
-        final double totalPrice = orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
-
-        // Retrieve the customer's address for delivery
-        final Address customerAddress = customer.getAddress();
-
-        // Create and save the new order
-        final CustomerOrder newOrder = new CustomerOrder(
-                customer,
-                orderItems,
-                customerAddress,
-                OrderStatus.UNCONFIRMED,
-                totalPrice,
-                restaurant
-        );
-
-        // Assign order number to each order item
-        orderItems.forEach(orderItem -> orderItem.setOrderNumber(newOrder.getOrderNumber()));
-
-        this.customerOrderRepository.save(newOrder);
-
-        // Pass success message and order details to the model
-        model.addAttribute("orderNumber", newOrder.getOrderNumber());
-        model.addAttribute("message", "Your order has been placed successfully!");
-        model.addAttribute("totalPrice", totalPrice);
-        model.addAttribute("restaurantName", restaurant.getName());
-
-        return "customer/orderConfirmation"; // Confirmation view
+        return appUserRepository.findByUsername(authentication.getName())
+                .orElseThrow(() -> new RuntimeException("User not found with username: " + authentication.getName()));
     }
 }

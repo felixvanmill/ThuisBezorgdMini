@@ -10,7 +10,6 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import static org.springframework.security.config.Customizer.withDefaults;
 
 @Configuration
 @EnableWebSecurity
@@ -27,7 +26,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable())
+                .csrf(csrf -> csrf.disable())  // Consider re-enabling CSRF for stateful apps
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/customer/restaurants", "/error").permitAll()
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")
@@ -37,14 +36,14 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form
                         .permitAll()
-                        .successHandler(this.customLoginSuccessHandler)  // Use the custom handler
+                        .successHandler(this.customLoginSuccessHandler)
+                        .failureUrl("/login?error=true")  // Graceful login error handling
                 )
                 .logout(logout -> logout
                         .logoutUrl("/logout")
                         .logoutSuccessUrl("/")
                         .permitAll()
-                )
-                .httpBasic(withDefaults());
+                );
 
         return http.build();
     }
@@ -61,4 +60,3 @@ public class SecurityConfig {
         return authManagerBuilder.build();
     }
 }
-

@@ -5,22 +5,24 @@ VALUES
     ('Another St', '456', '67890', 'City')
 ON CONFLICT DO NOTHING;
 
--- Insert data into restaurant
-INSERT INTO restaurant (name, description, location, slug)
+-- Create and populate the restaurant table with a slug column
+INSERT INTO restaurant (id, name, description, location, slug)
 VALUES
-    ('Pizza Place', 'Pizzeria specializing in Italian dishes', '123 Main St, City', 'pizza-place'),
-    ('Sushi World', 'Authentic Japanese restaurant with fresh sushi', '456 Ocean Ave, City', 'sushi-world')
+    (1, 'Pizza Place', 'Pizzeria specializing in Italian dishes', '123 Main St, City', 'pizza-place'),
+    (2, 'Sushi World', 'Authentic Japanese restaurant with fresh sushi', '456 Ocean Ave, City', 'sushi-world')
 ON CONFLICT DO NOTHING;
+
+-- Update other tables as needed
+
 
 -- Insert data into app_users
 INSERT INTO app_users (username, password, role, full_name, address_id, restaurant_id)
 VALUES
-    ('johndoe', '$2a$10$/nlOoRNcdcwXS7IeDFeDyuPDhZjfpdm598ZW0FpmcTSOtQJf4peK6', 'CUSTOMER', 'John Doe', 1, NULL),
-    ('marysmith', '$2a$10$/nlOoRNcdcwXS7IeDFeDyuPDhZjfpdm598ZW0FpmcTSOtQJf4peK6', 'RESTAURANT_EMPLOYEE', 'Mary Smith', NULL, 1),
-    ('pizzachef', '$2a$10$/nlOoRNcdcwXS7IeDFeDyuPDhZjfpdm598ZW0FpmcTSOtQJf4peK6', 'RESTAURANT_EMPLOYEE', 'Pizza Chef', NULL, 2),
-    ('alexjohnson', '$2a$10$/nlOoRNcdcwXS7IeDFeDyuPDhZjfpdm598ZW0FpmcTSOtQJf4peK6', 'DELIVERY_PERSON', 'Alex Johnson', NULL, NULL)
+    ('johndoe', '$2a$10$VV7hM4ueF.XpVP0VOJtJL.L1N2nb9jwPtxp0KNPP.9MPJahd49.2S', 'CUSTOMER', 'John Doe', 1, NULL),
+    ('marysmith', '$2a$10$VV7hM4ueF.XpVP0VOJtJL.L1N2nb9jwPtxp0KNPP.9MPJahd49.2S', 'RESTAURANT_EMPLOYEE', 'Mary Smith', NULL, 1),
+    ('pizzachef', '$2a$10$VV7hM4ueF.XpVP0VOJtJL.L1N2nb9jwPtxp0KNPP.9MPJahd49.2S', 'RESTAURANT_EMPLOYEE', 'Pizza Chef', NULL, 2),
+    ('alexjohnson', '$2a$10$VV7hM4ueF.XpVP0VOJtJL.L1N2nb9jwPtxp0KNPP.9MPJahd49.2S', 'DELIVERY_PERSON', 'Alex Johnson', NULL, NULL)
 ON CONFLICT DO NOTHING;
-
 
 -- Insert data into menu_item
 INSERT INTO menu_item (name, description, price, ingredients, inventory, restaurant_id)

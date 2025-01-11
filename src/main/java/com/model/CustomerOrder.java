@@ -23,8 +23,8 @@ public class CustomerOrder {
     @JoinColumn(name = "customer_order_id")
     private List<OrderItem> orderItems;
 
-    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    @JoinColumn(name = "address_id", referencedColumnName = "id")
+    @OneToOne(fetch = FetchType.EAGER) // Avoid cascading changes to Address
+    @JoinColumn(name = "address_id", referencedColumnName = "id", nullable = false)
     private Address address;
 
     @ManyToOne
@@ -97,6 +97,10 @@ public class CustomerOrder {
 
     public Address getAddress() {
         return this.address;
+    }
+
+    public void setAddress(final Address address) {
+        this.address = address;
     }
 
     public OrderStatus getStatus() {

@@ -14,7 +14,7 @@ public class Restaurant {
     private String location;
 
     @Column(unique = true, nullable = false)
-    private String slug; // New field for URL-friendly name
+    private String slug; // Field for URL-friendly name
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL)
     private List<MenuItem> menuItems;
@@ -29,21 +29,30 @@ public class Restaurant {
         this.name = name;
         this.description = description;
         this.location = location;
-        slug = this.generateSlug(name); // Automatically generate slug
+        this.slug = generateSlug(name); // Automatically generate slug
+    }
+
+    // Lifecycle callback to ensure slug is generated before persisting
+    @PrePersist
+    private void prePersistSlug() {
+        if (this.slug == null || this.slug.isEmpty()) {
+            this.slug = generateSlug(this.name);
+        }
     }
 
     // Slug generation logic
     private String generateSlug(final String name) {
-        return name.toLowerCase().replaceAll("[^a-z0-9]+", "-").replaceAll("-$", "");
+        return name.toLowerCase()
+                .replaceAll("[^a-z0-9]+", "-") // Replace non-alphanumeric characters with hyphens
+                .replaceAll("-$", "");       // Remove trailing hyphens
     }
 
     public void setName(final String name) {
         this.name = name;
-        slug = this.generateSlug(name); // Update slug when name changes
+        this.slug = generateSlug(name); // Update slug when name changes
     }
 
     // Getters and setters
-
     public Long getId() {
         return this.id;
     }

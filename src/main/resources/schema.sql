@@ -1,3 +1,14 @@
+-- Drop tables if they are currently existing
+DROP TABLE IF EXISTS order_items CASCADE;
+DROP TABLE IF EXISTS customer_order CASCADE;
+DROP TABLE IF EXISTS menu_item CASCADE;
+DROP TABLE IF EXISTS app_users CASCADE;
+DROP TABLE IF EXISTS restaurant CASCADE;
+DROP TABLE IF EXISTS address CASCADE;
+
+-- Enable the pgcrypto extension
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
+
 -- Table: address
 CREATE TABLE IF NOT EXISTS address (
                                        id SERIAL PRIMARY KEY,

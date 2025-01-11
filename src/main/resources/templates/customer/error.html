@@ -1,0 +1,11 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Error</title>
+</head>
+<body>
+<h1>Error</h1>
+<p th:text="${errorMessage}">An unexpected error occurred.</p>
+<p th:if="${debugLogs}" th:text="${debugLogs}"></p>
+</body>
+</html>
