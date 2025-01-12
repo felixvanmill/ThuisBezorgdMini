@@ -57,8 +57,10 @@ CREATE TABLE IF NOT EXISTS customer_order (
     status VARCHAR(255) NOT NULL CHECK (status IN ('UNCONFIRMED', 'PICKING_UP', 'TRANSPORT', 'DELIVERED', 'READY_FOR_DELIVERY', 'IN_KITCHEN')),
     total_price DECIMAL(10, 2) CHECK (total_price >= 0),
     restaurant_id INT REFERENCES restaurant(id) ON DELETE SET NULL ON UPDATE CASCADE,
-    order_number VARCHAR(255) NOT NULL UNIQUE
+    order_number VARCHAR(255) NOT NULL UNIQUE,
+    delivery_person VARCHAR(255) DEFAULT NULL
     );
+
 
 -- Table: order_items
 CREATE TABLE IF NOT EXISTS order_items (

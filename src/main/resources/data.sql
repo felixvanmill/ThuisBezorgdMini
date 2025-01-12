@@ -34,11 +34,12 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- Insert data into customer_order
-INSERT INTO customer_order (user_id, address_id, status, total_price, restaurant_id, order_number)
+INSERT INTO customer_order (user_id, address_id, status, total_price, restaurant_id, order_number, delivery_person)
 VALUES
-    (1, 1, 'READY_FOR_DELIVERY', 31.97, 1, 'ORDER001'),
-    (1, 2, 'DELIVERED', 47.95, 2, 'ORDER002')
+    (1, 1, 'READY_FOR_DELIVERY', 31.97, 1, 'ORDER001', NULL),
+    (1, 2, 'DELIVERED', 47.95, 2, 'ORDER002', 'alexjohnson')
 ON CONFLICT DO NOTHING;
+
 
 -- Insert data into order_items
 INSERT INTO order_items (customer_order_id, menu_item_id, quantity, order_number)

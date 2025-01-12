@@ -6,7 +6,6 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
-
 import org.springframework.data.jpa.repository.EntityGraph;
 
 import java.util.List;
@@ -39,11 +38,20 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
 
     List<CustomerOrder> findByStatus(OrderStatus status);
 
-    // New Method: Fetch all orders for a customer by username
     @EntityGraph(attributePaths = {"orderItems", "restaurant", "address"})
     List<CustomerOrder> findByUser_Username(String username);
 
-    // New Method: Fetch a specific order for a customer by order number and username
     @EntityGraph(attributePaths = {"orderItems", "restaurant", "address"})
     Optional<CustomerOrder> findByOrderNumberAndUser_Username(String orderNumber, String username);
+
+    @Query("SELECT o FROM CustomerOrder o " +
+            "WHERE o.deliveryPerson = :username AND o.status IN :statuses")
+    List<CustomerOrder> findByDeliveryPersonAndStatuses(@Param("username") String username, @Param("statuses") List<OrderStatus> statuses);
+
+    @Query("SELECT o FROM CustomerOrder o " +
+            "LEFT JOIN FETCH o.orderItems i " +
+            "LEFT JOIN FETCH o.restaurant r " +
+            "LEFT JOIN FETCH o.address a " +
+            "WHERE o.status = :status AND o.deliveryPerson IS NULL")
+    List<CustomerOrder> findUnassignedOrdersByStatus(@Param("status") OrderStatus status);
 }

@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.List;
 import java.util.UUID;
-import com.model.CustomerOrder;
 
 @Entity
 @Table(name = "customer_order")
@@ -24,10 +23,10 @@ public class CustomerOrder {
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_order_id")
-    @JsonIgnore // Avoid lazy-loading issues during serialization
+    @JsonIgnore
     private List<OrderItem> orderItems;
 
-    @OneToOne(fetch = FetchType.EAGER) // Avoid cascading changes to Address
+    @OneToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "address_id", referencedColumnName = "id", nullable = false)
     private Address address;
 
@@ -35,22 +34,22 @@ public class CustomerOrder {
     @JoinColumn(name = "restaurant_id", nullable = false)
     private Restaurant restaurant;
 
-    @Enumerated(EnumType.STRING) // Maps enum to string in DB
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private OrderStatus status;
 
     @Column(name = "total_price")
     private double totalPrice;
 
-    // Default constructor
+    @Column(name = "delivery_person", nullable = true)
+    private String deliveryPerson; // New field for delivery person assignment
+
     public CustomerOrder() {
-        orderNumber = this.generateOrderNumber();
+        this.orderNumber = generateOrderNumber();
     }
 
-    // Constructor to initialize all fields
-    public CustomerOrder(final AppUser user, final List<OrderItem> orderItems, final Address address,
-                         final OrderStatus status, final double totalPrice, final Restaurant restaurant) {
-        orderNumber = this.generateOrderNumber();
+    public CustomerOrder(AppUser user, List<OrderItem> orderItems, Address address, OrderStatus status, double totalPrice, Restaurant restaurant) {
+        this.orderNumber = generateOrderNumber();
         this.user = user;
         this.orderItems = orderItems;
         this.address = address;
@@ -59,68 +58,73 @@ public class CustomerOrder {
         this.restaurant = restaurant;
     }
 
-    // Generate unique order number
     private String generateOrderNumber() {
         return "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
-    // Calculate total price from order items
     public double calculateTotalPrice() {
         return this.orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
     }
 
     // Getters and Setters
     public Long getId() {
-        return this.id;
+        return id;
     }
 
     public String getOrderNumber() {
-        return this.orderNumber;
+        return orderNumber;
     }
 
     public AppUser getUser() {
-        return this.user;
+        return user;
     }
 
-    public void setUser(final AppUser user) {
+    public void setUser(AppUser user) {
         this.user = user;
     }
 
     public List<OrderItem> getOrderItems() {
-        return this.orderItems;
+        return orderItems;
     }
 
-    public void setOrderItems(final List<OrderItem> orderItems) {
-        orderItems.forEach(item -> item.setOrderNumber(orderNumber));
+    public void setOrderItems(List<OrderItem> orderItems) {
         this.orderItems = orderItems;
-        this.totalPrice = this.calculateTotalPrice();
+        this.totalPrice = calculateTotalPrice();
     }
 
     public double getTotalPrice() {
-        return this.totalPrice;
+        return totalPrice;
     }
 
     public Address getAddress() {
-        return this.address;
+        return address;
     }
 
-    public void setAddress(final Address address) {
+    public void setAddress(Address address) {
         this.address = address;
     }
 
     public OrderStatus getStatus() {
-        return this.status;
+        return status;
     }
 
-    public void setStatus(final OrderStatus status) {
+    public void setStatus(OrderStatus status) {
         this.status = status;
     }
 
     public Restaurant getRestaurant() {
-        return this.restaurant;
+        return restaurant;
     }
 
-    public void setRestaurant(final Restaurant restaurant) {
+    public void setRestaurant(Restaurant restaurant) {
         this.restaurant = restaurant;
+    }
+
+    public String getDeliveryPerson() {
+        return deliveryPerson;
+    }
+
+    public void setDeliveryPerson(String deliveryPerson) {
+        this.deliveryPerson = deliveryPerson;
     }
 }

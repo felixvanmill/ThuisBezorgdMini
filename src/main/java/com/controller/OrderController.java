@@ -2,6 +2,7 @@ package com.controller;
 
 import com.dto.CustomerOrderDTO;
 import com.model.CustomerOrder;
+import com.model.OrderStatus;
 import com.service.OrderService;
 import com.service.RestaurantService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,7 @@ public class OrderController {
     @Autowired
     private RestaurantService restaurantService;
 
-    // Get orders for the logged-in customer
+    // ✅ Get orders for the logged-in customer
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/customer")
     public ResponseEntity<?> getOrdersForCustomer(@RequestParam String username) {
@@ -40,6 +41,7 @@ public class OrderController {
         }
     }
 
+    // ✅ Get a customer's specific order by order number
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/customer/{orderNumber}")
     public ResponseEntity<?> getCustomerOrderByOrderNumber(
@@ -53,6 +55,7 @@ public class OrderController {
         }
     }
 
+    // ✅ Get orders for the logged-in restaurant employee
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping
     public ResponseEntity<?> getOrdersForLoggedInEmployee(@RequestParam String slug) {
@@ -69,6 +72,7 @@ public class OrderController {
         }
     }
 
+    // ✅ Get order by ID or order number
     @GetMapping("/{identifier}")
     public ResponseEntity<?> getOrderByIdentifier(@PathVariable String identifier) {
         try {
@@ -84,12 +88,14 @@ public class OrderController {
         }
     }
 
+    // ✅ Add a new order
     @PostMapping
     public ResponseEntity<CustomerOrderDTO> addOrder(@RequestBody final CustomerOrder order) {
         CustomerOrder newOrder = orderService.addOrder(order);
         return ResponseEntity.ok(new CustomerOrderDTO(newOrder));
     }
 
+    // ✅ Update order status by ID
     @PutMapping("/{id}")
     public ResponseEntity<?> updateOrderStatus(@PathVariable final Long id, @RequestParam final String status) {
         try {
@@ -100,6 +106,7 @@ public class OrderController {
         }
     }
 
+    // ✅ Delete an order by ID
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteOrder(@PathVariable final Long id) {
         try {
@@ -110,6 +117,26 @@ public class OrderController {
         }
     }
 
+    // ✅ Get orders by status
+    @GetMapping("/status")
+    public ResponseEntity<?> getOrdersByStatus(@RequestParam String status) {
+        try {
+            OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+            List<CustomerOrderDTO> orders = orderService.getOrdersByStatus(orderStatus).stream()
+                    .map(CustomerOrderDTO::new)
+                    .collect(Collectors.toList());
+
+            if (orders.isEmpty()) {
+                return ResponseEntity.status(404).body("No orders found with status: " + status);
+            }
+
+            return ResponseEntity.ok(orders);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value: " + status));
+        }
+    }
+
+    // ✅ Confirm an order for a restaurant employee
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @PostMapping("/{slug}/orders/{orderId}/confirm")
     public ResponseEntity<?> confirmOrder(
