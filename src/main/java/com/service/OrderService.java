@@ -22,9 +22,10 @@ public class OrderService {
 
     @Transactional(readOnly = true)
     public CustomerOrder getOrderById(final Long id) {
-        return orderRepository.findById(id)
+        return orderRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + id));
     }
+
 
     @Transactional(readOnly = true)
     public CustomerOrder getOrderByOrderNumber(final String orderNumber) {
