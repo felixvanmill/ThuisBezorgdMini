@@ -40,19 +40,33 @@ public class DeliveryController {
         ));
     }
 
-    // ✅ Assign a delivery person to an order
-    @PostMapping("/orders/{orderId}/assign")
-    public ResponseEntity<?> assignDeliveryPerson(@PathVariable Long orderId) {
-        CustomerOrder order = customerOrderRepository.findById(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
-        String username = getLoggedInUsername();
-        order.setDeliveryPerson(username);
-        customerOrderRepository.save(order);
+    // ✅ Assign a delivery person to an order (supports both numeric ID and alphanumeric order number)
+    @PostMapping("/orders/{identifier}/assign")
+    public ResponseEntity<?> assignDeliveryPerson(@PathVariable String identifier) {
+        CustomerOrder order;
 
-        return ResponseEntity.ok(Map.of(
-                "message", "Delivery person assigned successfully.",
-                "orderId", orderId
-        ));
+        try {
+            if (identifier.matches("\\d+")) { // Check if the identifier is numeric
+                Long orderId = Long.parseLong(identifier);
+                order = customerOrderRepository.findById(orderId)
+                        .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+            } else { // Treat it as an order number
+                order = customerOrderRepository.findByOrderNumber(identifier)
+                        .orElseThrow(() -> new RuntimeException("Order not found with order number: " + identifier));
+            }
+
+            String username = getLoggedInUsername();
+            order.setDeliveryPerson(username);
+            customerOrderRepository.save(order);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Delivery person assigned successfully.",
+                    "orderId", order.getId(),
+                    "orderNumber", order.getOrderNumber()
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
     }
 
     // ✅ Fetch orders assigned to the logged-in delivery person
@@ -125,6 +139,26 @@ public class DeliveryController {
         return ResponseEntity.ok(Map.of(
                 "message", "Order confirmed and assigned successfully.",
                 "orderId", orderId
+        ));
+    }
+
+    // ✅ Retrieve detailed information about an order assigned to the logged-in delivery person
+    @GetMapping("/orders/{orderId}/details")
+    public ResponseEntity<?> getOrderDetails(@PathVariable Long orderId) {
+        String username = getLoggedInUsername();
+        CustomerOrder order = customerOrderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+
+        if (!username.equals(order.getDeliveryPerson())) {
+            return ResponseEntity.status(403).body(Map.of("error", "Unauthorized: You are not assigned to this order."));
+        }
+
+        return ResponseEntity.ok(Map.of(
+                "orderNumber", order.getOrderNumber(),
+                "deliveryAddress", order.getAddress(),
+                "items", order.getOrderItems(),
+                "restaurant", order.getRestaurant().getName(),
+                "status", order.getStatus().name()
         ));
     }
 
