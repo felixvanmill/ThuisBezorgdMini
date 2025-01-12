@@ -7,6 +7,11 @@ import com.service.MenuItemService;
 
 import java.util.List;
 import java.util.Optional;
+import com.dto.InventoryUpdateRequest;
+import org.springframework.http.ResponseEntity;
+import java.util.Map;
+
+
 
 @RestController
 @RequestMapping("/api/menu-items")
@@ -35,8 +40,22 @@ public class MenuItemController {
         return this.menuItemService.updateMenuItem(id, menuItemDetails);
     }
 
+
     @DeleteMapping("/{id}")
     public void deleteMenuItem(@PathVariable final Long id) {
         this.menuItemService.deleteMenuItem(id);
+    }
+
+    @PostMapping("/{slug}/menu/inventory")
+    public ResponseEntity<?> updateInventory(
+            @PathVariable String slug,
+            @RequestBody List<InventoryUpdateRequest> inventoryUpdates) {
+        System.out.println("Received inventory update request for slug: " + slug);
+        try {
+            menuItemService.updateInventory(slug, inventoryUpdates);
+            return ResponseEntity.ok(Map.of("message", "Inventory updated successfully."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 }

@@ -10,6 +10,8 @@ import com.exception.ResourceNotFoundException;
 import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
+import com.dto.InventoryUpdateRequest;
+
 
 @Service
 public class MenuItemService {
@@ -30,6 +32,28 @@ public class MenuItemService {
     }
 
     @Transactional
+    public void updateInventory(String slug, List<InventoryUpdateRequest> inventoryUpdates) {
+        for (InventoryUpdateRequest request : inventoryUpdates) {
+            MenuItem menuItem = menuItemRepository.findById(request.getMenuItemId())
+                    .orElseThrow(() -> new ResourceNotFoundException("MenuItem not found with ID: " + request.getMenuItemId()));
+
+            // Verify the menu item belongs to the restaurant with the given slug
+            if (!menuItem.getRestaurant().getSlug().equals(slug)) {
+                throw new IllegalArgumentException("MenuItem does not belong to the restaurant with slug: " + slug);
+            }
+
+            // Update inventory
+            menuItem.setInventory(menuItem.getInventory() + request.getQuantity());
+
+            if (menuItem.getInventory() < 0) {
+                throw new IllegalArgumentException("Inventory cannot be negative for MenuItem ID: " + menuItem.getId());
+            }
+
+            menuItemRepository.save(menuItem);
+        }
+    }
+
+    @Transactional
     public MenuItem updateMenuItem(final Long id, final MenuItem menuItemDetails) {
         final MenuItem menuItem = this.menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
@@ -39,6 +63,7 @@ public class MenuItemService {
         menuItem.setDescription(menuItemDetails.getDescription());
         menuItem.setPrice(menuItemDetails.getPrice());
         menuItem.setIngredients(menuItemDetails.getIngredients());
+        menuItem.setInventory(menuItemDetails.getInventory());
 
         return this.menuItemRepository.save(menuItem);
     }
