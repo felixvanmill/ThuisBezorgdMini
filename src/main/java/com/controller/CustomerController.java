@@ -21,7 +21,6 @@ import com.repository.MenuItemRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.AppUserRepository;
 
-
 @RestController
 @RequestMapping("/customer")
 public class CustomerController {
@@ -89,11 +88,6 @@ public class CustomerController {
                 ));
             }
 
-            if (orderItems.isEmpty()) {
-                debugLogs.append("No valid items selected for the order.\n");
-                throw new RuntimeException("No items selected for the order.");
-            }
-
             double totalPrice = orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
             CustomerOrder newOrder = createOrder(customer, restaurant, orderItems, totalPrice);
             debugLogs.append("Order created successfully. Order Number: ").append(newOrder.getOrderNumber()).append("\n");
@@ -108,14 +102,10 @@ public class CustomerController {
 
         } catch (Exception ex) {
             debugLogs.append("Error while processing order: ").append(ex.getMessage()).append("\n");
-            return ResponseEntity.internalServerError().body(Map.of(
-                    "errorMessage", "An error occurred while placing your order. Please try again.",
-                    "debugLogs", debugLogs.toString()
-            ));
+            throw new RuntimeException("Failed to process order. Debug logs: " + debugLogs, ex);
         }
     }
 
-    // --- Helper Methods ---
 
     private Restaurant validateRestaurant(String slug, StringBuilder debugLogs) {
         return restaurantService.getRestaurantBySlug(slug)
@@ -124,7 +114,6 @@ public class CustomerController {
                     return new RuntimeException("Restaurant not found for slug: " + slug);
                 });
     }
-
 
     private AppUser validateCustomer(StringBuilder debugLogs) {
         AppUser customer = getAuthenticatedCustomer();
