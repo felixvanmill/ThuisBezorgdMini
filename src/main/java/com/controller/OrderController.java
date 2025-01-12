@@ -24,6 +24,35 @@ public class OrderController {
     @Autowired
     private RestaurantService restaurantService;
 
+    // Get orders for the logged-in customer
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @GetMapping("/customer")
+    public ResponseEntity<?> getOrdersForCustomer(@RequestParam String username) {
+        try {
+            List<CustomerOrderDTO> orders = orderService
+                    .getOrdersForCustomer(username)
+                    .stream()
+                    .map(CustomerOrderDTO::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @PreAuthorize("hasRole('CUSTOMER')")
+    @GetMapping("/customer/{orderNumber}")
+    public ResponseEntity<?> getCustomerOrderByOrderNumber(
+            @RequestParam String username,
+            @PathVariable String orderNumber) {
+        try {
+            CustomerOrder order = orderService.getOrderForCustomerByOrderNumber(username, orderNumber);
+            return ResponseEntity.ok(new CustomerOrderDTO(order));
+        } catch (Exception e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping
     public ResponseEntity<?> getOrdersForLoggedInEmployee(@RequestParam String slug) {
@@ -51,21 +80,6 @@ public class OrderController {
             }
             return ResponseEntity.ok(new CustomerOrderDTO(order));
         } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @GetMapping("/status")
-    public ResponseEntity<?> getOrdersByStatus(@RequestParam String status) {
-        try {
-            List<CustomerOrder> orders = orderService.getOrdersByStatus(status.toUpperCase());
-            List<CustomerOrderDTO> orderDTOs = orders.stream()
-                    .map(CustomerOrderDTO::new)
-                    .collect(Collectors.toList());
-            return ResponseEntity.ok(orderDTOs);
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(400).body(Map.of("error", "Invalid status: " + status));
-        } catch (Exception e) {
             return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
         }
     }

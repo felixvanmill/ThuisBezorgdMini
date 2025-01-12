@@ -75,4 +75,17 @@ public class OrderService {
         OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
         return orderRepository.findByStatus(orderStatus);
     }
+
+    // New method: Get all orders for a specific customer
+    @Transactional(readOnly = true)
+    public List<CustomerOrder> getOrdersForCustomer(String username) {
+        return orderRepository.findByUser_Username(username);
+    }
+
+    // New method: Get a specific order for a customer by order number
+    @Transactional(readOnly = true)
+    public CustomerOrder getOrderForCustomerByOrderNumber(String username, String orderNumber) {
+        return orderRepository.findByOrderNumberAndUser_Username(orderNumber, username)
+                .orElseThrow(() -> new RuntimeException("Order not found for user " + username + " with order number: " + orderNumber));
+    }
 }
