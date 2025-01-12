@@ -98,4 +98,17 @@ public class RestaurantController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
     }
+
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @GetMapping("/{slug}/orders")
+    public ResponseEntity<?> getOrdersForRestaurant(@PathVariable String slug) {
+        try {
+            String username = getLoggedInUsername();
+            List<CustomerOrder> orders = restaurantService.getOrdersForEmployee(slug, username);
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
 }

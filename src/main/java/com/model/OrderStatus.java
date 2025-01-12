@@ -2,6 +2,7 @@ package com.model;
 
 public enum OrderStatus {
     UNCONFIRMED,
+    CONFIRMED,
     PICKING_UP,
     TRANSPORT,
     DELIVERED,

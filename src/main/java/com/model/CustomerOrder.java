@@ -1,8 +1,11 @@
 package com.model;
 
 import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.List;
 import java.util.UUID;
+import com.model.CustomerOrder;
 
 @Entity
 @Table(name = "customer_order")
@@ -19,8 +22,9 @@ public class CustomerOrder {
     @JoinColumn(name = "user_id", nullable = false)
     private AppUser user;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     @JoinColumn(name = "customer_order_id")
+    @JsonIgnore // Avoid lazy-loading issues during serialization
     private List<OrderItem> orderItems;
 
     @OneToOne(fetch = FetchType.EAGER) // Avoid cascading changes to Address
@@ -44,7 +48,8 @@ public class CustomerOrder {
     }
 
     // Constructor to initialize all fields
-    public CustomerOrder(final AppUser user, final List<OrderItem> orderItems, final Address address, final OrderStatus status, final double totalPrice, final Restaurant restaurant) {
+    public CustomerOrder(final AppUser user, final List<OrderItem> orderItems, final Address address,
+                         final OrderStatus status, final double totalPrice, final Restaurant restaurant) {
         orderNumber = this.generateOrderNumber();
         this.user = user;
         this.orderItems = orderItems;
@@ -88,7 +93,7 @@ public class CustomerOrder {
     public void setOrderItems(final List<OrderItem> orderItems) {
         orderItems.forEach(item -> item.setOrderNumber(orderNumber));
         this.orderItems = orderItems;
-        totalPrice = this.calculateTotalPrice();
+        this.totalPrice = this.calculateTotalPrice();
     }
 
     public double getTotalPrice() {
