@@ -24,7 +24,6 @@ public class OrderService {
     public CustomerOrder getOrderById(final Long id) {
         return orderRepository.findById(id)
                 .map(order -> {
-                    // Ensure lazy-loaded fields are initialized
                     if (order.getRestaurant() != null) {
                         order.getRestaurant().getName();
                     }
@@ -40,7 +39,6 @@ public class OrderService {
     public CustomerOrder getOrderByOrderNumber(final String orderNumber) {
         return orderRepository.findByOrderNumber(orderNumber)
                 .map(order -> {
-                    // Ensure lazy-loaded fields are initialized
                     if (order.getRestaurant() != null) {
                         order.getRestaurant().getName();
                     }
@@ -70,5 +68,11 @@ public class OrderService {
     public void deleteOrder(final Long id) {
         CustomerOrder order = getOrderById(id);
         orderRepository.delete(order);
+    }
+
+    @Transactional(readOnly = true)
+    public List<CustomerOrder> getOrdersByStatus(String status) {
+        OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+        return orderRepository.findByStatus(orderStatus);
     }
 }

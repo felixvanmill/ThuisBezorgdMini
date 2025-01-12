@@ -33,7 +33,10 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
             "WHERE o.status IN :statuses")
     List<CustomerOrder> findByStatusesWithDetails(@Param("statuses") List<OrderStatus> statuses);
 
-    @EntityGraph(attributePaths = {"orderItems", "restaurant", "address"})
+    @EntityGraph(attributePaths = {"orderItems", "restaurant"})
     Optional<CustomerOrder> findByOrderNumber(String orderNumber);
+
+    List<CustomerOrder> findByStatus(OrderStatus status);
+
 }
 

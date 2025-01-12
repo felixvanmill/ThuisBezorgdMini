@@ -55,6 +55,21 @@ public class OrderController {
         }
     }
 
+    @GetMapping("/status")
+    public ResponseEntity<?> getOrdersByStatus(@RequestParam String status) {
+        try {
+            List<CustomerOrder> orders = orderService.getOrdersByStatus(status.toUpperCase());
+            List<CustomerOrderDTO> orderDTOs = orders.stream()
+                    .map(CustomerOrderDTO::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(orderDTOs);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(400).body(Map.of("error", "Invalid status: " + status));
+        } catch (Exception e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
     @PostMapping
     public ResponseEntity<CustomerOrderDTO> addOrder(@RequestBody final CustomerOrder order) {
         CustomerOrder newOrder = orderService.addOrder(order);
