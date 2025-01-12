@@ -14,7 +14,6 @@ ON CONFLICT DO NOTHING;
 
 -- Update other tables as needed
 
-
 -- Insert data into app_users
 INSERT INTO app_users (username, password, role, full_name, address_id, restaurant_id)
 VALUES
@@ -37,9 +36,10 @@ ON CONFLICT DO NOTHING;
 INSERT INTO customer_order (user_id, address_id, status, total_price, restaurant_id, order_number, delivery_person)
 VALUES
     (1, 1, 'READY_FOR_DELIVERY', 31.97, 1, 'ORDER001', NULL),
-    (1, 2, 'DELIVERED', 47.95, 2, 'ORDER002', 'alexjohnson')
+    (1, 2, 'DELIVERED', 47.95, 2, 'ORDER002', 'alexjohnson'),
+    -- New test order for delivery person functionality
+    (1, 1, 'READY_FOR_DELIVERY', 25.98, 1, 'ORDER003', NULL)
 ON CONFLICT DO NOTHING;
-
 
 -- Insert data into order_items
 INSERT INTO order_items (customer_order_id, menu_item_id, quantity, order_number)
@@ -47,5 +47,8 @@ VALUES
     (1, 1, 2, 'ORDER001'),
     (1, 2, 1, 'ORDER001'),
     (2, 3, 3, 'ORDER002'),
-    (2, 4, 2, 'ORDER002')
+    (2, 4, 2, 'ORDER002'),
+    -- Items for the new test order
+    (3, 1, 1, 'ORDER003'),
+    (3, 2, 1, 'ORDER003')
 ON CONFLICT DO NOTHING;
