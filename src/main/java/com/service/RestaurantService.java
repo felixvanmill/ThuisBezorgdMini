@@ -101,4 +101,25 @@ public class RestaurantService {
     public Optional<Restaurant> getRestaurantBySlug(String slug) {
         return restaurantRepository.findBySlug(slug);
     }
+
+    @Transactional(readOnly = true)
+    public CustomerOrder getOrderById(Long orderId) {
+        return customerOrderRepository.findById(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+    }
+
+    @Transactional(readOnly = true)
+    public CustomerOrder getOrderByOrderNumber(String orderNumber) {
+        return customerOrderRepository.findByOrderNumber(orderNumber)
+                .orElseThrow(() -> new RuntimeException("Order not found with order number: " + orderNumber));
+    }
+
+    @Transactional
+    public void saveOrder(CustomerOrder order) {
+        customerOrderRepository.save(order);
+    }
+
+
+
 }
+

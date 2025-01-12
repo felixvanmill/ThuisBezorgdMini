@@ -74,25 +74,6 @@ public class RestaurantController {
         }
     }
 
-    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @PostMapping("/{slug}/orders/{orderId}/updateStatus")
-    public ResponseEntity<?> updateOrderStatus(@PathVariable String slug, @PathVariable Long orderId, @RequestParam String status) {
-        try {
-            Restaurant restaurant = restaurantService.getRestaurantWithDetailsBySlug(slug)
-                    .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
-            CustomerOrder order = customerOrderRepository.findById(orderId)
-                    .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
-            if (!order.getRestaurant().getId().equals(restaurant.getId())) {
-                throw new RuntimeException("Order does not belong to the specified restaurant.");
-            }
-            OrderStatus orderStatus = OrderStatus.valueOf(status);
-            order.setStatus(orderStatus);
-            customerOrderRepository.save(order);
-            return ResponseEntity.ok(Map.of("message", "Order status updated successfully."));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
 
     private String getLoggedInUsername() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
@@ -106,6 +87,52 @@ public class RestaurantController {
             String username = getLoggedInUsername();
             List<CustomerOrder> orders = restaurantService.getOrdersForEmployee(slug, username);
             return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Update the status of an order for a restaurant.
+     * Example: POST /restaurant/{slug}/orders/{identifier}/updateStatus?status=READY_FOR_DELIVERY
+     */
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @PostMapping("/{slug}/orders/{identifier}/updateStatus")
+    public ResponseEntity<?> updateOrderStatus(
+            @PathVariable String slug,
+            @PathVariable String identifier,
+            @RequestParam String status) {
+        try {
+            Restaurant restaurant = restaurantService.getRestaurantBySlug(slug)
+                    .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+
+            CustomerOrder order;
+            if (identifier.matches("\\d+")) {
+                Long orderId = Long.parseLong(identifier);
+                order = restaurantService.getOrderById(orderId);
+            } else {
+                order = restaurantService.getOrderByOrderNumber(identifier);
+            }
+
+            if (!order.getRestaurant().getId().equals(restaurant.getId())) {
+                throw new RuntimeException("Order does not belong to the specified restaurant.");
+            }
+
+            // Allow transition to CONFIRMED
+            OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+            if (orderStatus == OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.UNCONFIRMED) {
+                throw new RuntimeException("Order must be UNCONFIRMED to transition to CONFIRMED.");
+            }
+
+            order.setStatus(orderStatus);
+            restaurantService.saveOrder(order);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Order status updated successfully.",
+                    "orderId", order.getId(),
+                    "orderNumber", order.getOrderNumber(),
+                    "newStatus", status
+            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }

@@ -63,5 +63,4 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     @Query("SELECT o FROM CustomerOrder o WHERE o.orderNumber = :orderNumber")
     Optional<CustomerOrder> findByOrderNumberWithDetails(@Param("orderNumber") String orderNumber);
 
-
 }
