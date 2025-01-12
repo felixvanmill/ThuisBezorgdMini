@@ -54,4 +54,14 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
             "LEFT JOIN FETCH o.address a " +
             "WHERE o.status = :status AND o.deliveryPerson IS NULL")
     List<CustomerOrder> findUnassignedOrdersByStatus(@Param("status") OrderStatus status);
+
+    @EntityGraph(attributePaths = {"address", "orderItems.menuItem", "restaurant"})
+    @Query("SELECT o FROM CustomerOrder o WHERE o.id = :id")
+    Optional<CustomerOrder> findByIdWithDetails(@Param("id") Long id);
+
+    @EntityGraph(attributePaths = {"address", "orderItems.menuItem", "restaurant"})
+    @Query("SELECT o FROM CustomerOrder o WHERE o.orderNumber = :orderNumber")
+    Optional<CustomerOrder> findByOrderNumberWithDetails(@Param("orderNumber") String orderNumber);
+
+
 }

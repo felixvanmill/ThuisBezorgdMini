@@ -235,4 +235,48 @@ public class DeliveryController {
         }
     }
 
+    // Fetch detailed information for a specific order
+    @GetMapping("/orders/{identifier}/details")
+    public ResponseEntity<?> getOrderDetails(@PathVariable String identifier) {
+        CustomerOrder order;
+
+        try {
+            if (identifier.matches("\\d+")) {
+                Long orderId = Long.parseLong(identifier);
+                order = customerOrderRepository.findByIdWithDetails(orderId)
+                        .orElseThrow(() -> new RuntimeException("Order not found with ID: " + orderId));
+            } else {
+                order = customerOrderRepository.findByOrderNumberWithDetails(identifier)
+                        .orElseThrow(() -> new RuntimeException("Order not found with order number: " + identifier));
+            }
+
+            String username = getLoggedInUsername();
+
+            // Ensure the logged-in user is authorized to access the order
+            if (!username.equals(order.getDeliveryPerson())) {
+                return ResponseEntity.status(403).body(Map.of("error", "Unauthorized: You are not assigned to this order."));
+            }
+
+            // Map the order details to a response
+            return ResponseEntity.ok(Map.of(
+                    "orderNumber", order.getOrderNumber(),
+                    "deliveryAddress", order.getAddress().getFullAddress(),
+                    "items", order.getOrderItems().stream()
+                            .map(item -> Map.of(
+                                    "itemName", item.getMenuItem().getName(),
+                                    "quantity", item.getQuantity(),
+                                    "price", item.getMenuItem().getPrice(),
+                                    "totalPrice", item.getTotalPrice()
+                            ))
+                            .collect(Collectors.toList()),
+                    "totalPrice", order.getTotalPrice(),
+                    "status", order.getStatus().name(),
+                    "restaurant", order.getRestaurant().getName()
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+
 }
