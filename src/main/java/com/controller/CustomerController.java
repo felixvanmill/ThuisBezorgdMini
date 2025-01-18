@@ -211,5 +211,42 @@ public class CustomerController {
         }
     }
 
+    @PostMapping("/orders/{orderNumber}/cancel")
+    public ResponseEntity<?> cancelOrder(@PathVariable String orderNumber) {
+        try {
+            // Retrieve the logged-in customer's username
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+            // Fetch the order linked to the customer and order number
+            CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderNumber, username)
+                    .orElseThrow(() -> new RuntimeException("Order not found or access denied."));
+
+            // Check the current status of the order
+            if (order.getStatus() == OrderStatus.CANCELED) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                        "error", "Order was already canceled."
+                ));
+            }
+
+            if (order.getStatus() != OrderStatus.UNCONFIRMED) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of(
+                        "error", "Order is in status " + order.getStatus() + " and cannot be canceled."
+                ));
+            }
+
+            // Update order status to "CANCELED"
+            order.setStatus(OrderStatus.CANCELED);
+            customerOrderRepository.save(order);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Order successfully canceled."
+            ));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of(
+                    "error", e.getMessage()
+            ));
+        }
+    }
+
 
 }

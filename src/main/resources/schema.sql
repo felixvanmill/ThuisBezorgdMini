@@ -54,7 +54,7 @@ CREATE TABLE IF NOT EXISTS customer_order (
                                               id SERIAL PRIMARY KEY,
                                               user_id INT REFERENCES app_users(id) ON DELETE CASCADE ON UPDATE CASCADE,
     address_id INT REFERENCES address(id) ON DELETE SET NULL ON UPDATE CASCADE,
-    status VARCHAR(255) NOT NULL CHECK (status IN ('UNCONFIRMED','CONFIRMED' ,'PICKING_UP', 'TRANSPORT', 'DELIVERED', 'READY_FOR_DELIVERY', 'IN_KITCHEN')),
+    status VARCHAR(255) NOT NULL CHECK (status IN ('UNCONFIRMED','CONFIRMED' ,'PICKING_UP', 'TRANSPORT', 'DELIVERED', 'READY_FOR_DELIVERY', 'IN_KITCHEN', 'CANCELED')),
     total_price DECIMAL(10, 2) CHECK (total_price >= 0),
     restaurant_id INT REFERENCES restaurant(id) ON DELETE SET NULL ON UPDATE CASCADE,
     order_number VARCHAR(255) NOT NULL UNIQUE,
