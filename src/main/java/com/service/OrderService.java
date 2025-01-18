@@ -68,4 +68,10 @@ public class OrderService {
         return orderRepository.findByOrderNumberAndUser_Username(orderNumber, username)
                 .orElseThrow(() -> new RuntimeException("Order not found for user " + username + " with order number: " + orderNumber));
     }
+
+    public CustomerOrder saveOrder(CustomerOrder order) {
+        return orderRepository.save(order); // Assumes `orderRepository` exists in your service
+    }
+
+
 }

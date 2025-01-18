@@ -1,9 +1,11 @@
 package com.service;
 
 import com.dto.RestaurantDTO;
+import com.model.MenuItem;
 import com.model.CustomerOrder;
 import com.model.OrderStatus;
 import com.model.Restaurant;
+import com.repository.MenuItemRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.RestaurantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,6 +24,9 @@ public class RestaurantService {
 
     @Autowired
     private RestaurantRepository restaurantRepository;
+
+    @Autowired
+    private MenuItemRepository menuItemRepository;
 
     @Transactional(readOnly = true)
     public List<Restaurant> getAllRestaurants() {
@@ -44,15 +49,29 @@ public class RestaurantService {
     @Transactional(readOnly = true)
     public List<RestaurantDTO> getAllRestaurantsWithMenu() {
         return restaurantRepository.findAll().stream()
-                .map(RestaurantDTO::new)
+                .map(restaurant -> {
+                    // Only fetch available menu items for customers
+                    List<MenuItem> availableMenuItems = menuItemRepository.findByRestaurant_IdAndIsAvailable(restaurant.getId(), true);
+                    return new RestaurantDTO(restaurant, availableMenuItems, false); // Exclude inventory for all restaurants
+                })
                 .collect(Collectors.toList());
     }
 
     @Transactional(readOnly = true)
-    public RestaurantDTO getRestaurantWithMenu(String slug) {
+    public RestaurantDTO getRestaurantWithMenu(String slug, boolean includeInventory) {
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found with slug: " + slug));
-        return new RestaurantDTO(restaurant);
+
+        List<MenuItem> menuItems;
+        if (includeInventory) {
+            // Fetch all menu items for employees
+            menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
+        } else {
+            // Fetch only available menu items for customers
+            menuItems = menuItemRepository.findByRestaurant_IdAndIsAvailable(restaurant.getId(), true);
+        }
+
+        return new RestaurantDTO(restaurant, menuItems, includeInventory);
     }
 
     @Transactional(readOnly = true)
@@ -118,8 +137,4 @@ public class RestaurantService {
     public void saveOrder(CustomerOrder order) {
         customerOrderRepository.save(order);
     }
-
-
-
 }
-

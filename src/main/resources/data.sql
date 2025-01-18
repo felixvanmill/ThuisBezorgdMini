@@ -24,12 +24,12 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- Insert data into menu_item
-INSERT INTO menu_item (name, description, price, ingredients, inventory, restaurant_id)
+INSERT INTO menu_item (name, description, price, ingredients, inventory, is_available, restaurant_id)
 VALUES
-    ('Margherita Pizza', 'Classic cheese and tomato', 9.99, 'Cheese, Tomato, Basil', 999, 1),
-    ('Pepperoni Pizza', 'Cheese, tomato, and pepperoni', 11.99, 'Cheese, Tomato, Pepperoni', 999, 1),
-    ('California Roll', 'Crab, avocado, and cucumber', 8.99, 'Crab, Avocado, Cucumber', 999, 2),
-    ('Spicy Tuna Roll', 'Tuna with spicy sauce', 10.99, 'Tuna, Spicy Mayo', 999, 2)
+    ('Margherita Pizza', 'Classic cheese and tomato', 9.99, 'Cheese, Tomato, Basil', 999, TRUE, 1),
+    ('Pepperoni Pizza', 'Cheese, tomato, and pepperoni', 11.99, 'Cheese, Tomato, Pepperoni', 999, TRUE, 1),
+    ('California Roll', 'Crab, avocado, and cucumber', 8.99, 'Crab, Avocado, Cucumber', 999, TRUE, 2),
+    ('Spicy Tuna Roll', 'Tuna with spicy sauce', 10.99, 'Tuna, Spicy Mayo', 999, TRUE, 2)
 ON CONFLICT DO NOTHING;
 
 -- Insert data into customer_order

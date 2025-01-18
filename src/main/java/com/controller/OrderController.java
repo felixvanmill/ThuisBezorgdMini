@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 @RestController
-@RequestMapping("/api/orders")
+@RequestMapping("/orders")
 public class OrderController {
 
     @Autowired
@@ -25,13 +25,16 @@ public class OrderController {
     @Autowired
     private RestaurantService restaurantService;
 
-    // ✅ Get orders for the logged-in customer
+    // Customer-specific endpoints
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/customer")
     public ResponseEntity<?> getOrdersForCustomer(@RequestParam String username) {
         try {
-            List<CustomerOrderDTO> orders = orderService
-                    .getOrdersForCustomer(username)
+            String loggedInUser = getAuthenticatedUsername();
+            if (!loggedInUser.equals(username)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Access denied."));
+            }
+            List<CustomerOrderDTO> orders = orderService.getOrdersForCustomer(username)
                     .stream()
                     .map(CustomerOrderDTO::new)
                     .collect(Collectors.toList());
@@ -41,13 +44,14 @@ public class OrderController {
         }
     }
 
-    // ✅ Get a customer's specific order by order number
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/customer/{orderNumber}")
-    public ResponseEntity<?> getCustomerOrderByOrderNumber(
-            @RequestParam String username,
-            @PathVariable String orderNumber) {
+    public ResponseEntity<?> getCustomerOrderByOrderNumber(@RequestParam String username, @PathVariable String orderNumber) {
         try {
+            String loggedInUser = getAuthenticatedUsername();
+            if (!loggedInUser.equals(username)) {
+                return ResponseEntity.status(403).body(Map.of("error", "Access denied."));
+            }
             CustomerOrder order = orderService.getOrderForCustomerByOrderNumber(username, orderNumber);
             return ResponseEntity.ok(new CustomerOrderDTO(order));
         } catch (Exception e) {
@@ -55,14 +59,13 @@ public class OrderController {
         }
     }
 
-    // ✅ Get orders for the logged-in restaurant employee
+    // Restaurant-specific endpoints
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @GetMapping
+    @GetMapping("/restaurant")
     public ResponseEntity<?> getOrdersForLoggedInEmployee(@RequestParam String slug) {
         try {
-            String username = SecurityContextHolder.getContext().getAuthentication().getName();
-            List<CustomerOrderDTO> orders = restaurantService
-                    .getOrdersForEmployee(slug, username)
+            String username = getAuthenticatedUsername();
+            List<CustomerOrderDTO> orders = restaurantService.getOrdersForEmployee(slug, username)
                     .stream()
                     .map(CustomerOrderDTO::new)
                     .collect(Collectors.toList());
@@ -72,7 +75,18 @@ public class OrderController {
         }
     }
 
-    // ✅ Get order by ID or order number
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @PostMapping("/restaurant/{slug}/{orderId}/confirm")
+    public ResponseEntity<?> confirmOrder(@PathVariable String slug, @PathVariable Long orderId) {
+        try {
+            restaurantService.confirmOrder(slug, orderId);
+            return ResponseEntity.ok(Map.of("message", "Order confirmed successfully."));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    // Shared endpoints
     @GetMapping("/{identifier}")
     public ResponseEntity<?> getOrderByIdentifier(@PathVariable String identifier) {
         try {
@@ -88,36 +102,43 @@ public class OrderController {
         }
     }
 
-    // ✅ Add a new order
-    @PostMapping
-    public ResponseEntity<CustomerOrderDTO> addOrder(@RequestBody final CustomerOrder order) {
-        CustomerOrder newOrder = orderService.addOrder(order);
-        return ResponseEntity.ok(new CustomerOrderDTO(newOrder));
+    private String getAuthenticatedUsername() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
-    // ✅ Update order status by ID
-    @PutMapping("/{id}")
-    public ResponseEntity<?> updateOrderStatus(@PathVariable final Long id, @RequestParam final String status) {
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @PostMapping("/restaurant/{slug}/{orderId}/updateStatus")
+    public ResponseEntity<?> updateOrderStatus(
+            @PathVariable String slug,
+            @PathVariable String orderId, // Keep as String for alphanumeric IDs
+            @RequestParam String status) {
         try {
-            CustomerOrder updatedOrder = orderService.updateOrderStatus(id, status);
-            return ResponseEntity.ok(new CustomerOrderDTO(updatedOrder));
+            // Determine if `orderId` is numeric or alphanumeric
+            CustomerOrder order;
+            if (orderId.matches("\\d+")) {
+                order = orderService.getOrderById(Long.parseLong(orderId));
+            } else {
+                order = orderService.getOrderByOrderNumber(orderId);
+            }
+
+            if (!order.getRestaurant().getSlug().equals(slug)) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Order does not belong to this restaurant."));
+            }
+
+            OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+            order.setStatus(orderStatus);
+            orderService.saveOrder(order);
+
+            return ResponseEntity.ok(Map.of("message", "Order status updated successfully.", "newStatus", order.getStatus()));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value: " + status));
         } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
-    // ✅ Delete an order by ID
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteOrder(@PathVariable final Long id) {
-        try {
-            orderService.deleteOrder(id);
-            return ResponseEntity.noContent().build();
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    // ✅ Get orders by status
+    // ✅ Add this endpoint to fetch orders by status
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/status")
     public ResponseEntity<?> getOrdersByStatus(@RequestParam String status) {
         try {
@@ -127,7 +148,7 @@ public class OrderController {
                     .collect(Collectors.toList());
 
             if (orders.isEmpty()) {
-                return ResponseEntity.status(404).body("No orders found with status: " + status);
+                return ResponseEntity.status(404).body(Map.of("error", "No orders found with status: " + status));
             }
 
             return ResponseEntity.ok(orders);
@@ -136,17 +157,4 @@ public class OrderController {
         }
     }
 
-    // ✅ Confirm an order for a restaurant employee
-    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @PostMapping("/{slug}/orders/{orderId}/confirm")
-    public ResponseEntity<?> confirmOrder(
-            @PathVariable String slug,
-            @PathVariable Long orderId) {
-        try {
-            restaurantService.confirmOrder(slug, orderId);
-            return ResponseEntity.ok(Map.of("message", "Order confirmed successfully."));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
 }

@@ -14,7 +14,7 @@ import java.util.Map;
 
 
 @RestController
-@RequestMapping("/api/menu-items")
+@RequestMapping("/restaurant/menu-items")
 public class MenuItemController {
 
     @Autowired

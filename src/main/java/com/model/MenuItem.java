@@ -20,6 +20,18 @@ public class MenuItem {
     @Column(nullable = false)
     private int inventory = 999; // Default inventory
 
+    @Column(name = "is_available", nullable = false)
+    private boolean isAvailable = true; // Default to true
+
+    public boolean isAvailable() {
+        return isAvailable;
+    }
+
+    public void setAvailable(boolean available) {
+        isAvailable = available;
+    }
+
+
     // Constructors
     public MenuItem() {
     }
@@ -111,4 +123,6 @@ public class MenuItem {
             throw new IllegalStateException("Insufficient inventory for " + name);
         }
     }
+
+
 }

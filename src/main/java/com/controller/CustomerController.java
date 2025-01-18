@@ -57,15 +57,17 @@ public class CustomerController {
         return ResponseEntity.ok(restaurants);
     }
 
-    @GetMapping("/restaurant/{slug}/menu")
-    public ResponseEntity<?> getMenuItemsBySlug(@PathVariable String slug) {
+    @GetMapping("/{slug}/menu")
+    public ResponseEntity<?> getMenuBySlug(@PathVariable String slug) {
         try {
-            RestaurantDTO restaurantDTO = restaurantService.getRestaurantWithMenu(slug);
-            return ResponseEntity.ok(restaurantDTO);
+            RestaurantDTO restaurantDTO = restaurantService.getRestaurantWithMenu(slug, false); // Exclude inventory
+            return ResponseEntity.ok(restaurantDTO.getMenuItems());
         } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("errorMessage", e.getMessage()));
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+
 
     @PostMapping("/restaurant/{slug}/order")
     @Transactional

@@ -22,4 +22,8 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
     @Modifying
     @Query("UPDATE MenuItem m SET m.inventory = m.inventory + :quantity WHERE m.id = :menuItemId")
     void addInventory(@Param("menuItemId") Long menuItemId, @Param("quantity") int quantity);
+
+    // Find available menu items by restaurant
+    List<MenuItem> findByRestaurant_IdAndIsAvailable(Long restaurantId, boolean isAvailable);
+
 }

@@ -23,78 +23,43 @@ import java.util.Map;
 public class RestaurantController {
 
     @Autowired
-    private CustomerOrderRepository customerOrderRepository;
+    private RestaurantService restaurantService;
 
     @Autowired
     private MenuItemRepository menuItemRepository;
 
     @Autowired
-    private RestaurantService restaurantService;
+    private CustomerOrderRepository customerOrderRepository;
 
-    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @GetMapping("/{slug}/management")
-    public ResponseEntity<?> getRestaurantManagementBySlug(@PathVariable String slug) {
-        try {
-            Restaurant restaurant = restaurantService.getRestaurantWithDetailsBySlug(slug)
-                    .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
-            List<CustomerOrder> orders = customerOrderRepository.findByRestaurant_Id(restaurant.getId());
-            List<MenuItem> menuItems = restaurant.getMenuItems();
-
-            return ResponseEntity.ok(Map.of(
-                    "restaurantName", restaurant.getName(),
-                    "orders", orders,
-                    "menuItems", menuItems,
-                    "slug", slug
-            ));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @GetMapping("/management")
-    public ResponseEntity<?> getManagementForLoggedInEmployee() {
-        try {
-            String username = getLoggedInUsername();
-            Restaurant restaurant = restaurantService.getRestaurantWithDetailsByEmployeeUsername(username)
-                    .orElseThrow(() -> new RuntimeException("Restaurant not found for the logged-in employee."));
-            return ResponseEntity.ok(Map.of("redirectUrl", "/restaurant/" + restaurant.getSlug() + "/management"));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
+    /**
+     * For customers: Fetch the restaurant menu without inventory details.
+     */
     @GetMapping("/{slug}/menu")
     public ResponseEntity<?> getMenuBySlug(@PathVariable String slug) {
         try {
-            RestaurantDTO restaurantDTO = restaurantService.getRestaurantWithMenu(slug);
+            RestaurantDTO restaurantDTO = restaurantService.getRestaurantWithMenu(slug, false); // Exclude inventory
             return ResponseEntity.ok(restaurantDTO.getMenuItems());
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
-        }
-    }
-
-
-    private String getLoggedInUsername() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        return authentication.getName();
-    }
-
-    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @GetMapping("/{slug}/orders")
-    public ResponseEntity<?> getOrdersForRestaurant(@PathVariable String slug) {
-        try {
-            String username = getLoggedInUsername();
-            List<CustomerOrder> orders = restaurantService.getOrdersForEmployee(slug, username);
-            return ResponseEntity.ok(orders);
-        } catch (Exception e) {
+        } catch (RuntimeException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
 
     /**
-     * Update the status of an order for a restaurant.
-     * Example: POST /restaurant/{slug}/orders/{identifier}/updateStatus?status=READY_FOR_DELIVERY
+     * For restaurant employees: Fetch the restaurant menu with inventory details.
+     */
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @GetMapping("/{slug}/menu-management")
+    public ResponseEntity<?> getMenuManagementBySlug(@PathVariable String slug) {
+        try {
+            RestaurantDTO restaurantDTO = restaurantService.getRestaurantWithMenu(slug, true); // Include inventory
+            return ResponseEntity.ok(restaurantDTO.getMenuItems());
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * For restaurant employees: Update the status of an order.
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @PostMapping("/{slug}/orders/{identifier}/updateStatus")
@@ -118,7 +83,7 @@ public class RestaurantController {
                 throw new RuntimeException("Order does not belong to the specified restaurant.");
             }
 
-            // Allow transition to CONFIRMED
+            // Allow only valid status transitions
             OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
             if (orderStatus == OrderStatus.CONFIRMED && order.getStatus() != OrderStatus.UNCONFIRMED) {
                 throw new RuntimeException("Order must be UNCONFIRMED to transition to CONFIRMED.");
@@ -138,4 +103,34 @@ public class RestaurantController {
         }
     }
 
+    /**
+     * For restaurant employees: Update the availability status of a menu item.
+     */
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @PatchMapping("/menu/items/{itemId}/availability")
+    public ResponseEntity<?> updateAvailability(@PathVariable Long itemId, @RequestBody Map<String, Boolean> request) {
+        if (!request.containsKey("isAvailable")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing 'isAvailable' field"));
+        }
+
+        MenuItem menuItem = menuItemRepository.findById(itemId)
+                .orElseThrow(() -> new RuntimeException("Menu item not found"));
+
+        menuItem.setAvailable(request.get("isAvailable"));
+        menuItemRepository.save(menuItem);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Menu item availability updated successfully",
+                "itemId", menuItem.getId(),
+                "isAvailable", menuItem.isAvailable()
+        ));
+    }
+
+    /**
+     * Helper method to get the username of the logged-in user.
+     */
+    private String getLoggedInUsername() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        return authentication.getName();
+    }
 }

@@ -127,4 +127,9 @@ public class CustomerOrder {
     public void setDeliveryPerson(String deliveryPerson) {
         this.deliveryPerson = deliveryPerson;
     }
+
+    public AppUser getCustomer() { // Corrected method
+        return user;
+    }
+
 }
