@@ -87,6 +87,7 @@ public class OrderController {
     }
 
     // Shared endpoints
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/{identifier}")
     public ResponseEntity<?> getOrderByIdentifier(@PathVariable String identifier) {
         try {
@@ -96,15 +97,19 @@ public class OrderController {
             } else { // Alphanumeric order number
                 order = orderService.getOrderByOrderNumber(identifier);
             }
+
+            // Ensure the logged-in employee has access
+            String loggedInUser = getAuthenticatedUsername();
+            if (!restaurantService.isEmployeeAuthorizedForRestaurant(loggedInUser, order.getRestaurant().getSlug())) {
+                return ResponseEntity.status(403).body(Map.of("error", "Access denied: Order does not belong to your restaurant."));
+            }
+
             return ResponseEntity.ok(new CustomerOrderDTO(order));
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
         }
     }
 
-    private String getAuthenticatedUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
 
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @PostMapping("/restaurant/{slug}/{orderId}/updateStatus")
@@ -155,6 +160,10 @@ public class OrderController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value: " + status));
         }
+    }
+
+    private String getAuthenticatedUsername() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
 }

@@ -37,4 +37,9 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
      */
     @EntityGraph(attributePaths = {"menuItems", "employees"})
     Optional<Restaurant> findByEmployees_Username(String username);
+
+    // New method to fetch restaurant by slug with employees
+    @Query("SELECT r FROM Restaurant r LEFT JOIN FETCH r.employees WHERE r.slug = :slug")
+    Optional<Restaurant> findBySlugWithEmployees(@Param("slug") String slug);
+
 }

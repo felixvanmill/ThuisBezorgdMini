@@ -50,9 +50,8 @@ public class RestaurantService {
     public List<RestaurantDTO> getAllRestaurantsWithMenu() {
         return restaurantRepository.findAll().stream()
                 .map(restaurant -> {
-                    // Only fetch available menu items for customers
                     List<MenuItem> availableMenuItems = menuItemRepository.findByRestaurant_IdAndIsAvailable(restaurant.getId(), true);
-                    return new RestaurantDTO(restaurant, availableMenuItems, false); // Exclude inventory for all restaurants
+                    return new RestaurantDTO(restaurant, availableMenuItems, false); // Exclude inventory
                 })
                 .collect(Collectors.toList());
     }
@@ -64,10 +63,8 @@ public class RestaurantService {
 
         List<MenuItem> menuItems;
         if (includeInventory) {
-            // Fetch all menu items for employees
             menuItems = menuItemRepository.findByRestaurant_Id(restaurant.getId());
         } else {
-            // Fetch only available menu items for customers
             menuItems = menuItemRepository.findByRestaurant_IdAndIsAvailable(restaurant.getId(), true);
         }
 
@@ -82,6 +79,12 @@ public class RestaurantService {
     @Transactional(readOnly = true)
     public Optional<Restaurant> getRestaurantWithDetailsByEmployeeUsername(String username) {
         return restaurantRepository.findByEmployees_Username(username);
+    }
+
+    @Transactional(readOnly = true)
+    public Restaurant getRestaurantBySlugWithEmployees(String slug) {
+        return restaurantRepository.findBySlugWithEmployees(slug)
+                .orElseThrow(() -> new RuntimeException("Restaurant not found with slug: " + slug));
     }
 
     @Transactional
@@ -103,8 +106,7 @@ public class RestaurantService {
 
     @Transactional(readOnly = true)
     public List<CustomerOrder> getOrdersForEmployee(String slug, String username) {
-        Restaurant restaurant = restaurantRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found with slug: " + slug));
+        Restaurant restaurant = getRestaurantBySlugWithEmployees(slug);
 
         boolean isEmployee = restaurant.getEmployees().stream()
                 .anyMatch(employee -> employee.getUsername().equals(username));
@@ -137,4 +139,13 @@ public class RestaurantService {
     public void saveOrder(CustomerOrder order) {
         customerOrderRepository.save(order);
     }
+
+    @Transactional(readOnly = true)
+    public boolean isEmployeeAuthorizedForRestaurant(String username, String restaurantSlug) {
+        return restaurantRepository.findBySlugWithEmployees(restaurantSlug)
+                .map(restaurant -> restaurant.getEmployees().stream()
+                        .anyMatch(employee -> employee.getUsername().equals(username)))
+                .orElse(false);
+    }
 }
+
