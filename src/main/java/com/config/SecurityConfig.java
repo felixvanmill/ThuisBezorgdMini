@@ -1,6 +1,7 @@
 package com.config;
 
 import com.service.CustomUserDetailsService;
+import com.service.TokenBlacklistService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -10,30 +11,34 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public SecurityConfig(final CustomUserDetailsService userDetailsService) {
+    public SecurityConfig(final CustomUserDetailsService userDetailsService, final TokenBlacklistService tokenBlacklistService) {
         this.userDetailsService = userDetailsService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(final HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs, re-enable for stateful apps
+                .csrf(csrf -> csrf.disable()) // Disable CSRF for APIs
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/auth/logout", "/api/customer/restaurants", "/error").permitAll()
+                        .requestMatchers("/auth/login", "/api/customer/restaurants", "/error").permitAll()
+                        .requestMatchers("/auth/logout").authenticated() // Require authentication for logout
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")
                         .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE")
                         .requestMatchers("/delivery/**").hasRole("DELIVERY_PERSON")
                         .anyRequest().authenticated()
                 )
                 .formLogin(form -> form
-                        .loginProcessingUrl("/auth/login") // Endpoint for POST-based login
+                        .loginProcessingUrl("/auth/login")
                         .successHandler((request, response, authentication) -> {
                             response.setContentType("application/json");
                             response.setCharacterEncoding("UTF-8");
@@ -48,11 +53,22 @@ public class SecurityConfig {
                         .permitAll()
                 )
                 .logout(logout -> logout
-                        .logoutUrl("/auth/logout") // Endpoint for logout
+                        .logoutUrl("/auth/logout")
+                        .addLogoutHandler(customLogoutHandler()) // Add custom logout handler
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setContentType("application/json");
                             response.setCharacterEncoding("UTF-8");
-                            response.getWriter().write("{\"message\": \"Logout successful\"}");
+
+                            // Check if the user is logged in
+                            if (authentication == null || authentication.getName() == null || "anonymousUser".equals(authentication.getName())) {
+                                response.setStatus(400); // Bad Request
+                                response.getWriter().write("{\"message\": \"No user was logged in\"}");
+                                return;
+                            }
+
+                            // Include user-specific details in the response
+                            String username = authentication.getName();
+                            response.getWriter().write("{\"message\": \"Logout successful\", \"user\": \"" + username + "\"}");
                         })
                         .permitAll()
                 )
@@ -66,6 +82,18 @@ public class SecurityConfig {
                 );
 
         return http.build();
+    }
+
+    @Bean
+    public LogoutHandler customLogoutHandler() {
+        return (request, response, authentication) -> {
+            // Extract token from Authorization header
+            String tokenHeader = request.getHeader("Authorization");
+            if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
+                String token = tokenHeader.replace("Bearer ", "");
+                tokenBlacklistService.blacklistToken(token); // Blacklist the token
+            }
+        };
     }
 
     @Bean

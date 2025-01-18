@@ -21,6 +21,10 @@ import com.repository.MenuItemRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.AppUserRepository;
 
+import org.springframework.http.HttpStatus;
+
+
+
 @RestController
 @RequestMapping("/customer")
 public class CustomerController {
@@ -171,4 +175,41 @@ public class CustomerController {
         return appUserRepository.findByUsername(authentication.getName())
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + authentication.getName()));
     }
+
+    @GetMapping("/track-order/{orderId}")
+    public ResponseEntity<?> trackOrder(@PathVariable String orderId) {
+        try {
+            // Retrieve the logged-in customer's username
+            String username = SecurityContextHolder.getContext().getAuthentication().getName();
+
+            // Fetch the order linked to the customer
+            CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderId, username)
+                    .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
+
+            // Build a JSON-friendly response
+            Map<String, Object> response = Map.of(
+                    "status", "success",
+                    "message", "Order details fetched successfully",
+                    "data", Map.of(
+                            "orderNumber", order.getOrderNumber(),
+                            "status", order.getStatus().name(),
+                            "restaurant", order.getRestaurant().getName(),
+                            "deliveryPerson", order.getDeliveryPerson() != null ? order.getDeliveryPerson() : "Not assigned",
+                            "estimatedDeliveryTime", "30-45 minutes"
+                    )
+            );
+
+            return ResponseEntity.ok(response);
+        } catch (RuntimeException e) {
+            // Build an error response in JSON
+            Map<String, Object> errorResponse = Map.of(
+                    "status", "error",
+                    "message", e.getMessage()
+            );
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(errorResponse);
+        }
+    }
+
+
 }
