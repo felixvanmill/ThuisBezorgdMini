@@ -11,6 +11,15 @@ import jakarta.transaction.Transactional;
 import java.util.List;
 import java.util.Optional;
 import com.dto.InventoryUpdateRequest;
+import org.springframework.web.multipart.MultipartFile;
+import java.util.ArrayList; // For List implementation
+import java.io.BufferedReader; // For reading the CSV file
+import java.io.InputStreamReader; // For InputStream processing
+import org.apache.commons.csv.CSVParser; // For parsing CSV files
+import org.apache.commons.csv.CSVRecord; // For individual records
+import org.apache.commons.csv.CSVFormat; // For CSV file format
+
+
 
 
 @Service
@@ -71,4 +80,54 @@ public class MenuItemService {
     public void deleteMenuItem(final Long id) {
         this.menuItemRepository.deleteById(id);
     }
+
+    public List<String> processMenuCSV(MultipartFile file) {
+        List<String> errorMessages = new ArrayList<>();
+
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream()))) {
+            CSVParser parser = new CSVParser(reader,
+                    CSVFormat.DEFAULT.builder()
+                            .setHeader()
+                            .setSkipHeaderRecord(true) // Skip header row
+                            .build());
+
+            for (CSVRecord record : parser) {
+                try {
+                    // Validate and parse fields
+                    if (!record.isSet("name") || record.get("name").isBlank()) {
+                        throw new IllegalArgumentException("Missing or empty 'name' field.");
+                    }
+                    String name = record.get("name");
+
+                    String description = record.isSet("description") ? record.get("description") : "No description provided";
+                    double price = record.isSet("price") ? Double.parseDouble(record.get("price")) : 0.0;
+                    int inventory = record.isSet("inventory") ? Integer.parseInt(record.get("inventory")) : 0;
+
+                    // Create or update MenuItem
+                    String itemId = record.isSet("id") ? record.get("id") : null;
+                    MenuItem menuItem = (itemId != null) ?
+                            menuItemRepository.findById(Long.parseLong(itemId)).orElse(new MenuItem()) :
+                            new MenuItem();
+
+                    menuItem.setName(name);
+                    menuItem.setDescription(description);
+                    menuItem.setPrice(price);
+                    menuItem.setInventory(inventory);
+
+                    // Save MenuItem to the database
+                    menuItemRepository.save(menuItem);
+
+                } catch (Exception e) {
+                    // Add detailed error for the current record
+                    errorMessages.add("Row " + record.getRecordNumber() + ": " + e.getMessage());
+                }
+            }
+        } catch (Exception e) {
+            errorMessages.add("Failed to process file: " + e.getMessage());
+        }
+
+        return errorMessages;
+    }
+
+
 }
