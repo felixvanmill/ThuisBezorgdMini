@@ -18,14 +18,18 @@ public class RestaurantDTO {
     /**
      * Constructs a RestaurantDTO with restaurant and menu item details.
      *
-     * @param restaurant       The Restaurant entity.
+     * @param restaurant       The Restaurant entity (cannot be null).
      * @param menuItems        List of menu items associated with the restaurant.
      * @param includeInventory Whether to include inventory in the menu item details.
      */
     public RestaurantDTO(Restaurant restaurant, List<MenuItem> menuItems, boolean includeInventory) {
+        if (restaurant == null) {
+            throw new IllegalArgumentException("Restaurant cannot be null");
+        }
         this.name = restaurant.getName();
         this.slug = restaurant.getSlug();
         this.menuItems = menuItems.stream()
+                .filter(item -> item != null) // Ensure no null MenuItem objects
                 .map(menuItem -> new MenuItemDTO(menuItem, includeInventory))
                 .collect(Collectors.toList());
     }
@@ -51,6 +55,7 @@ public class RestaurantDTO {
      */
     public void setMenuItems(List<MenuItem> menuItems, boolean includeInventory) {
         this.menuItems = menuItems.stream()
+                .filter(item -> item != null) // Ensure no null MenuItem objects
                 .map(menuItem -> new MenuItemDTO(menuItem, includeInventory))
                 .collect(Collectors.toList());
     }

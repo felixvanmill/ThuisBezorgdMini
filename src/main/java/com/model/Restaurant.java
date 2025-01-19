@@ -114,4 +114,8 @@ public class Restaurant {
     public void setEmployees(List<AppUser> employees) {
         this.employees = employees;
     }
+
+    public void setSlug(String slug) {
+        this.slug = slug; // Add this setter
+    }
 }
