@@ -9,6 +9,9 @@ import org.springframework.stereotype.Service;
 
 import java.util.Optional;
 
+/**
+ * Service for managing addresses.
+ */
 @Service
 public class AddressService {
 
@@ -16,21 +19,24 @@ public class AddressService {
     private AddressRepository addressRepository;
 
     /**
-     * Retrieve an address by its ID.
-     * @param id Address ID.
-     * @return Address if found.
+     * Find an address by its ID.
+     *
+     * @param id The ID of the address to retrieve.
+     * @return The found address.
+     * @throws RuntimeException if the address is not found.
      */
-    public Address getAddressById(final Long id) {
-        return this.addressRepository.findById(id)
+    public Address getAddressById(Long id) {
+        return addressRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Address not found for ID: " + id));
     }
 
     /**
-     * Create a new address.
-     * @param address Address object to save.
-     * @return Saved address.
+     * Save a new address to the database.
+     *
+     * @param address The address to save.
+     * @return The saved address.
      */
-    public Address createAddress(final Address address) {
-        return this.addressRepository.save(address);
+    public Address createAddress(Address address) {
+        return addressRepository.save(address);
     }
 }

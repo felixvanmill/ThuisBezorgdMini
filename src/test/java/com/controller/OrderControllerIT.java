@@ -26,7 +26,7 @@ class OrderControllerIT {
      */
     @Test
     void testGetAllOrders() {
-        ResponseEntity<CustomerOrder[]> response = restTemplate.getForEntity("/api/orders", CustomerOrder[].class);
+        final ResponseEntity<CustomerOrder[]> response = this.restTemplate.getForEntity("/api/orders", CustomerOrder[].class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
     }
@@ -37,8 +37,8 @@ class OrderControllerIT {
      */
     @Test
     void testCreateOrder() {
-        CustomerOrder order = new CustomerOrder();
-        ResponseEntity<CustomerOrder> response = restTemplate.postForEntity("/api/orders", order, CustomerOrder.class);
+        final CustomerOrder order = new CustomerOrder();
+        final ResponseEntity<CustomerOrder> response = this.restTemplate.postForEntity("/api/orders", order, CustomerOrder.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
     }

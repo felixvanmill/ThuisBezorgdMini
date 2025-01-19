@@ -5,46 +5,53 @@ import com.model.Restaurant;
 import com.model.UserRole;
 import org.springframework.stereotype.Service;
 
+/**
+ * Service for validating user roles and access permissions.
+ */
 @Service
 public class RoleValidatorService {
 
     /**
-     * Validates if a user is a restaurant employee managing a specific restaurant.
-     * @param user the authenticated user.
-     * @param restaurant the restaurant being accessed.
-     * @return true if the user is authorized to manage the restaurant.
+     * Checks if the user is a restaurant employee managing the given restaurant.
+     *
+     * @param user       The logged-in user.
+     * @param restaurant The restaurant to check.
+     * @return True if the user is authorized for this restaurant.
      */
-    public boolean validateRestaurantEmployee(AppUser user, Restaurant restaurant) {
-        return user.getRole() == UserRole.RESTAURANT_EMPLOYEE &&
-                restaurant != null &&
-                restaurant.getEmployees().contains(user);
+    public boolean validateRestaurantEmployee(final AppUser user, final Restaurant restaurant) {
+        return UserRole.RESTAURANT_EMPLOYEE == user.getRole()
+                && restaurant != null
+                && restaurant.getEmployees().contains(user);
     }
 
     /**
-     * Validates if a user is a delivery person.
-     * @param user the authenticated user.
-     * @return true if the user has the delivery person role.
+     * Checks if the user is a delivery person.
+     *
+     * @param user The logged-in user.
+     * @return True if the user is a delivery person.
      */
-    public boolean validateDeliveryPerson(AppUser user) {
-        return user.getRole() == UserRole.DELIVERY_PERSON;
+    public boolean validateDeliveryPerson(final AppUser user) {
+        return UserRole.DELIVERY_PERSON == user.getRole();
     }
 
     /**
-     * Validates if a user is a customer.
-     * @param user the authenticated user.
-     * @return true if the user has the customer role.
+     * Checks if the user is a customer.
+     *
+     * @param user The logged-in user.
+     * @return True if the user is a customer.
      */
-    public boolean validateCustomer(AppUser user) {
-        return user.getRole() == UserRole.CUSTOMER;
+    public boolean validateCustomer(final AppUser user) {
+        return UserRole.CUSTOMER == user.getRole();
     }
 
     /**
-     * Validates if a user has access to a resource based on roles.
-     * @param user the authenticated user.
-     * @param requiredRole the role required to access the resource.
-     * @return true if the user has the required role.
+     * Checks if the user has the required role to access a resource.
+     *
+     * @param user         The logged-in user.
+     * @param requiredRole The required role for access.
+     * @return True if the user has the required role.
      */
-    public boolean validateRole(AppUser user, UserRole requiredRole) {
+    public boolean validateRole(final AppUser user, final UserRole requiredRole) {
         return user.getRole() == requiredRole;
     }
 }

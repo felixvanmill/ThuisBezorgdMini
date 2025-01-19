@@ -3,7 +3,10 @@ package com.dto;
 import com.model.CustomerOrder;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-@JsonInclude(JsonInclude.Include.NON_NULL) // Exclude null fields in JSON response
+/**
+ * DTO for transferring customer order data.
+ */
+@JsonInclude(JsonInclude.Include.NON_NULL) // Exclude null fields from JSON
 public class CustomerOrderDTO {
 
     private Long id;
@@ -12,15 +15,16 @@ public class CustomerOrderDTO {
     private String status;
     private String restaurantName;
 
+    // Default constructor
     public CustomerOrderDTO() {
     }
 
+    // Initialize from a CustomerOrder entity
     public CustomerOrderDTO(CustomerOrder order) {
         this.id = order.getId();
         this.orderNumber = order.getOrderNumber();
         this.totalPrice = order.getTotalPrice();
         this.status = order.getStatus().name();
-        // Handle potential lazy-loading issues
         this.restaurantName = (order.getRestaurant() != null) ? order.getRestaurant().getName() : null;
     }
 

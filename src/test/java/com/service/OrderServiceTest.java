@@ -33,11 +33,11 @@ class OrderServiceTest {
     @Test
     void testGetOrderById() {
         // Arrange
-        CustomerOrder order = new CustomerOrder();
-        when(customerOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        final CustomerOrder order = new CustomerOrder();
+        when(this.customerOrderRepository.findById(1L)).thenReturn(Optional.of(order));
 
         // Act
-        Optional<CustomerOrder> result = orderService.getOrderById(1L);
+        final Optional<CustomerOrder> result = this.orderService.getOrderById(1L);
 
         // Assert
         assertTrue(result.isPresent(), "Order should be present");
@@ -51,10 +51,10 @@ class OrderServiceTest {
     @Test
     void testGetOrderById_NotFound() {
         // Arrange
-        when(customerOrderRepository.findById(1L)).thenReturn(Optional.empty());
+        when(this.customerOrderRepository.findById(1L)).thenReturn(Optional.empty());
 
         // Act & Assert
-        Optional<CustomerOrder> result = orderService.getOrderById(1L);
+        final Optional<CustomerOrder> result = this.orderService.getOrderById(1L);
         assertFalse(result.isPresent(), "Order should not be present");
     }
 
@@ -65,11 +65,11 @@ class OrderServiceTest {
     @Test
     void testAddOrder() {
         // Arrange
-        CustomerOrder order = new CustomerOrder();
-        when(customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(order);
+        final CustomerOrder order = new CustomerOrder();
+        when(this.customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(order);
 
         // Act
-        CustomerOrder result = orderService.addOrder(order);
+        final CustomerOrder result = this.orderService.addOrder(order);
 
         // Assert
         assertNotNull(result, "Created order should not be null");
@@ -83,12 +83,12 @@ class OrderServiceTest {
     @Test
     void testUpdateOrderStatus() {
         // Arrange
-        CustomerOrder order = new CustomerOrder();
-        when(customerOrderRepository.findById(1L)).thenReturn(Optional.of(order));
-        when(customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(order);
+        final CustomerOrder order = new CustomerOrder();
+        when(this.customerOrderRepository.findById(1L)).thenReturn(Optional.of(order));
+        when(this.customerOrderRepository.save(any(CustomerOrder.class))).thenReturn(order);
 
         // Act
-        CustomerOrder result = orderService.updateOrderStatus(1L, "DELIVERED");
+        final CustomerOrder result = this.orderService.updateOrderStatus(1L, "DELIVERED");
 
         // Assert
         assertNotNull(result, "Updated order should not be null");

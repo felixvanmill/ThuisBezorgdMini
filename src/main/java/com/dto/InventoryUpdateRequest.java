@@ -1,6 +1,10 @@
 package com.dto;
 
+/**
+ * DTO for updating inventory of a menu item.
+ */
 public class InventoryUpdateRequest {
+
     private Long menuItemId;
     private int quantity;
 

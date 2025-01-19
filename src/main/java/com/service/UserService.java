@@ -1,3 +1,5 @@
+// src/main/java/com/service/UserService.java
+
 package com.service;
 
 import com.model.AppUser;
@@ -24,81 +26,78 @@ public class UserService {
      * @return List of all users.
      */
     public List<AppUser> getAllUsers() {
-        return this.userRepository.findAll();
+        return userRepository.findAll();
     }
 
     /**
      * Retrieve a user by their ID.
      *
-     * @param id The ID of the user.
-     * @return An Optional containing the user if found, or empty if not found.
+     * @param id User ID.
+     * @return User if found, or empty Optional.
      */
-    public Optional<AppUser> getUserById(final Long id) {
-        return this.userRepository.findById(id);
+    public Optional<AppUser> getUserById(Long id) {
+        return userRepository.findById(id);
     }
 
     /**
-     * Add a new user to the database.
-     * Passwords are encrypted before saving.
+     * Add a new user to the database with encrypted password.
      *
-     * @param user The user to add.
-     * @return The saved user.
+     * @param user User to add.
+     * @return Saved user.
      */
-    public AppUser addUser(final AppUser user) {
-        // Encrypt the password before saving the user
-        user.setPassword(this.passwordEncoder.encode(user.getPassword()));
-        return this.userRepository.save(user);
+    public AppUser addUser(AppUser user) {
+        user.setPassword(passwordEncoder.encode(user.getPassword())); // Encrypt password
+        return userRepository.save(user);
     }
 
     /**
      * Update an existing user's details.
      *
-     * @param id          The ID of the user to update.
-     * @param userDetails The new details for the user.
-     * @return An Optional containing the updated user if found, or empty if not found.
+     * @param id          User ID to update.
+     * @param userDetails New details for the user.
+     * @return Updated user if found, or empty Optional.
      */
-    public Optional<AppUser> updateUser(final Long id, final AppUser userDetails) {
-        return this.userRepository.findById(id).map(existingUser -> {
+    public Optional<AppUser> updateUser(Long id, AppUser userDetails) {
+        return userRepository.findById(id).map(existingUser -> {
             existingUser.setUsername(userDetails.getUsername());
-            // Encrypt the password before updating
-            existingUser.setPassword(this.passwordEncoder.encode(userDetails.getPassword()));
+            existingUser.setPassword(passwordEncoder.encode(userDetails.getPassword())); // Encrypt password
             existingUser.setRole(userDetails.getRole());
             existingUser.setFullName(userDetails.getFullName());
-            return this.userRepository.save(existingUser);
+            return userRepository.save(existingUser);
         });
     }
 
     /**
      * Delete a user by their ID.
      *
-     * @param id The ID of the user to delete.
-     * @return True if the user was deleted, false if the user was not found.
+     * @param id User ID to delete.
+     * @return True if deleted, false if not found.
      */
-    public boolean deleteUser(final Long id) {
-        if (this.userRepository.existsById(id)) {
-            this.userRepository.deleteById(id);
+    public boolean deleteUser(Long id) {
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
             return true;
         }
         return false;
     }
 
     /**
-     * Check if a username is already in use.
+     * Check if a username exists.
      *
-     * @param username The username to check.
-     * @return True if the username exists, false otherwise.
+     * @param username Username to check.
+     * @return True if username exists, false otherwise.
      */
-    public boolean userExists(final String username) {
-        return this.userRepository.findByUsername(username).isPresent();
+    public boolean userExists(String username) {
+        return userRepository.findByUsername(username).isPresent();
     }
 
     /**
      * Retrieve a user by their username.
      *
-     * @param username The username of the user.
-     * @return An Optional containing the user if found, or empty if not found.
+     * @param username Username to find.
+     * @return User if found, or empty Optional.
      */
-    public Optional<AppUser> getUserByUsername(final String username) {
-        return this.userRepository.findByUsername(username);
+    public Optional<AppUser> getUserByUsername(String username) {
+        return userRepository.findByUsername(username);
     }
 }

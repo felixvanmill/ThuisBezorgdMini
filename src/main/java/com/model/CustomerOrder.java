@@ -6,48 +6,53 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Represents a customer's order, including items, delivery address, and status.
+ */
 @Entity
 @Table(name = "customer_order")
 public class CustomerOrder {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-generate primary key
     private Long id;
 
-    @Column(name = "order_number", unique = true, nullable = false)
+    @Column(name = "order_number", unique = true, nullable = false) // Unique order identifier
     private String orderNumber;
 
     @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
+    @JoinColumn(name = "user_id", nullable = false) // Link to the customer
     private AppUser user;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
-    @JoinColumn(name = "customer_order_id")
+    @JoinColumn(name = "customer_order_id") // Link items to the order
     @JsonIgnore
     private List<OrderItem> orderItems;
 
     @OneToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "address_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "address_id", nullable = false) // Delivery address
     private Address address;
 
     @ManyToOne
-    @JoinColumn(name = "restaurant_id", nullable = false)
+    @JoinColumn(name = "restaurant_id", nullable = false) // Associated restaurant
     private Restaurant restaurant;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false)
+    @Column(nullable = false) // Order status
     private OrderStatus status;
 
-    @Column(name = "total_price")
+    @Column(name = "total_price") // Total order price
     private double totalPrice;
 
-    @Column(name = "delivery_person", nullable = true)
-    private String deliveryPerson; // New field for delivery person assignment
+    @Column(name = "delivery_person") // Assigned delivery person
+    private String deliveryPerson;
 
+    // Default constructor
     public CustomerOrder() {
         this.orderNumber = generateOrderNumber();
     }
 
+    // Constructor with fields
     public CustomerOrder(AppUser user, List<OrderItem> orderItems, Address address, OrderStatus status, double totalPrice, Restaurant restaurant) {
         this.orderNumber = generateOrderNumber();
         this.user = user;
@@ -58,12 +63,14 @@ public class CustomerOrder {
         this.restaurant = restaurant;
     }
 
+    // Generate a unique order number
     private String generateOrderNumber() {
         return "ORD-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
     }
 
+    // Calculate total price based on items
     public double calculateTotalPrice() {
-        return this.orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
+        return orderItems.stream().mapToDouble(OrderItem::getTotalPrice).sum();
     }
 
     // Getters and Setters
@@ -128,8 +135,7 @@ public class CustomerOrder {
         this.deliveryPerson = deliveryPerson;
     }
 
-    public AppUser getCustomer() { // Corrected method
+    public AppUser getCustomer() {
         return user;
     }
-
 }

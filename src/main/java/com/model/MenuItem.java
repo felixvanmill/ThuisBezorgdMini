@@ -2,10 +2,14 @@ package com.model;
 
 import jakarta.persistence.*;
 
+/**
+ * Represents a menu item in a restaurant.
+ */
 @Entity
 public class MenuItem {
+
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-generate primary key
     private Long id;
 
     private String name;
@@ -14,34 +18,25 @@ public class MenuItem {
     private String ingredients;
 
     @ManyToOne
-    @JoinColumn(name = "restaurant_id")
+    @JoinColumn(name = "restaurant_id") // Link to the restaurant
     private Restaurant restaurant;
 
-    @Column(nullable = false)
-    private int inventory = 999; // Default inventory
+    @Column(nullable = false) // Inventory must always have a value
+    private int inventory = 999; // Default inventory value
 
-    @Column(name = "is_available", nullable = false)
-    private boolean isAvailable = true; // Default to true
-
-    public boolean isAvailable() {
-        return isAvailable;
-    }
-
-    public void setAvailable(boolean available) {
-        isAvailable = available;
-    }
-
+    @Column(name = "is_available", nullable = false) // Indicates if the item is available
+    private boolean isAvailable = true;
 
     // Constructors
     public MenuItem() {
     }
 
-    public MenuItem(final String name, final double price) {
+    public MenuItem(String name, double price) {
         this.name = name;
         this.price = price;
     }
 
-    public MenuItem(final String name, final String description, final double price, final String ingredients, final Restaurant restaurant) {
+    public MenuItem(String name, String description, double price, String ingredients, Restaurant restaurant) {
         this.name = name;
         this.description = description;
         this.price = price;
@@ -49,8 +44,7 @@ public class MenuItem {
         this.restaurant = restaurant;
     }
 
-    // NEW CONSTRUCTOR INCLUDING INVENTORY
-    public MenuItem(final String name, final String description, final double price, final String ingredients, final Restaurant restaurant, final int inventory) {
+    public MenuItem(String name, String description, double price, String ingredients, Restaurant restaurant, int inventory) {
         this.name = name;
         this.description = description;
         this.price = price;
@@ -61,68 +55,92 @@ public class MenuItem {
 
     // Getters and Setters
     public Long getId() {
-        return this.id;
+        return id;
     }
 
-    public void setId(final Long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
     public String getName() {
-        return this.name;
+        return name;
     }
 
-    public void setName(final String name) {
+    public void setName(String name) {
         this.name = name;
     }
 
     public String getDescription() {
-        return this.description;
+        return description;
     }
 
-    public void setDescription(final String description) {
+    public void setDescription(String description) {
         this.description = description;
     }
 
     public double getPrice() {
-        return this.price;
+        return price;
     }
 
-    public void setPrice(final double price) {
+    public void setPrice(double price) {
         this.price = price;
     }
 
     public String getIngredients() {
-        return this.ingredients;
+        return ingredients;
     }
 
-    public void setIngredients(final String ingredients) {
+    public void setIngredients(String ingredients) {
         this.ingredients = ingredients;
     }
 
     public Restaurant getRestaurant() {
-        return this.restaurant;
+        return restaurant;
     }
 
-    public void setRestaurant(final Restaurant restaurant) {
+    public void setRestaurant(Restaurant restaurant) {
         this.restaurant = restaurant;
     }
 
     public int getInventory() {
-        return this.inventory;
+        return inventory;
     }
 
-    public void setInventory(final int inventory) {
+    public void setInventory(int inventory) {
         this.inventory = inventory;
     }
 
-    public void reduceInventory(final int quantity) {
-        if (inventory >= quantity) {
-            inventory -= quantity;
+    public boolean isAvailable() {
+        return isAvailable;
+    }
+
+    public void setAvailable(boolean isAvailable) {
+        this.isAvailable = isAvailable;
+    }
+
+    /**
+     * Reduces the inventory by the specified quantity.
+     *
+     * @param quantity The quantity to reduce.
+     * @throws IllegalStateException if inventory is insufficient.
+     */
+    public void reduceInventory(int quantity) {
+        if (this.inventory >= quantity) {
+            this.inventory -= quantity;
         } else {
-            throw new IllegalStateException("Insufficient inventory for " + name);
+            throw new IllegalStateException("Insufficient inventory for " + this.name);
         }
     }
 
-
+    /**
+     * Sets the restaurant ID by creating or updating the associated restaurant entity.
+     *
+     * @param restaurantId The ID of the restaurant.
+     */
+    public void setRestaurantId(Long restaurantId) {
+        if (this.restaurant == null) {
+            this.restaurant = new Restaurant();
+        }
+        this.restaurant.setId(restaurantId);
+    }
 }

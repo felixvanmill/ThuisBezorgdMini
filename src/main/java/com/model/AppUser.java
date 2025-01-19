@@ -3,66 +3,50 @@ package com.model;
 import jakarta.persistence.*;
 
 /**
- * Entity class representing an application user.
- * Each user has a role, which is now managed as an enum (UserRole).
+ * Represents an application user with roles and optional associations to a restaurant and address.
  */
 @Entity
 @Table(name = "app_users")
 public class AppUser {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-generate primary key values
+    @GeneratedValue(strategy = GenerationType.IDENTITY) // Auto-generate primary key
     private Long id;
 
-    @Column(nullable = false, unique = true) // Ensure usernames are unique and required
+    @Column(nullable = false, unique = true) // Username must be unique and not null
     private String username;
 
-    @Column(nullable = false) // Passwords are required
+    @Column(nullable = false) // Password is required
     private String password;
 
-    @Enumerated(EnumType.STRING) // Store the UserRole enum as a string in the database
-    @Column(nullable = false) // Roles are required
+    @Enumerated(EnumType.STRING) // Store role as a string in the database
+    @Column(nullable = false) // Role is required
     private UserRole role;
 
-    private String fullName; // Optional full name for the user
+    private String fullName; // Optional full name
 
     @ManyToOne
-    @JoinColumn(name = "restaurant_id") // Foreign key to associate user with a restaurant
+    @JoinColumn(name = "restaurant_id") // Link to a restaurant (optional)
     private Restaurant restaurant;
 
     @ManyToOne
-    @JoinColumn(name = "address_id") // Foreign key to associate user with an address
+    @JoinColumn(name = "address_id") // Link to an address (optional)
     private Address address;
 
-    // Default constructor (required by JPA)
+    // Default constructor required by JPA
     public AppUser() {
     }
 
-    /**
-     * Constructor for creating a user without a restaurant association.
-     *
-     * @param username  The user's unique username.
-     * @param password  The user's password.
-     * @param role      The user's role as a UserRole enum.
-     * @param fullName  The user's full name.
-     */
-    public AppUser(final String username, final String password, final UserRole role, final String fullName) {
+    // Constructor for a user without a restaurant
+    public AppUser(String username, String password, UserRole role, String fullName) {
         this.username = username;
         this.password = password;
         this.role = role;
         this.fullName = fullName;
     }
 
-    /**
-     * Constructor for creating a user with a restaurant association.
-     *
-     * @param username   The user's unique username.
-     * @param password   The user's password.
-     * @param role       The user's role as a UserRole enum.
-     * @param fullName   The user's full name.
-     * @param restaurant The restaurant associated with the user.
-     */
-    public AppUser(final String username, final String password, final UserRole role, final String fullName, final Restaurant restaurant) {
+    // Constructor for a user with a restaurant
+    public AppUser(String username, String password, UserRole role, String fullName, Restaurant restaurant) {
         this.username = username;
         this.password = password;
         this.role = role;
@@ -70,61 +54,60 @@ public class AppUser {
         this.restaurant = restaurant;
     }
 
-    // Getters and setters for accessing and modifying fields
-
+    // Getters and setters
     public Long getId() {
-        return this.id;
+        return id;
     }
 
-    public void setId(final Long id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
     public String getUsername() {
-        return this.username;
+        return username;
     }
 
-    public void setUsername(final String username) {
+    public void setUsername(String username) {
         this.username = username;
     }
 
     public String getPassword() {
-        return this.password;
+        return password;
     }
 
-    public void setPassword(final String password) {
+    public void setPassword(String password) {
         this.password = password;
     }
 
-    public UserRole getRole() { // Return the user's role as a UserRole enum
-        return this.role;
+    public UserRole getRole() {
+        return role;
     }
 
-    public void setRole(final UserRole role) { // Set the user's role as a UserRole enum
+    public void setRole(UserRole role) {
         this.role = role;
     }
 
     public String getFullName() {
-        return this.fullName;
+        return fullName;
     }
 
-    public void setFullName(final String fullName) {
+    public void setFullName(String fullName) {
         this.fullName = fullName;
     }
 
     public Restaurant getRestaurant() {
-        return this.restaurant;
+        return restaurant;
     }
 
-    public void setRestaurant(final Restaurant restaurant) {
+    public void setRestaurant(Restaurant restaurant) {
         this.restaurant = restaurant;
     }
 
     public Address getAddress() {
-        return this.address;
+        return address;
     }
 
-    public void setAddress(final Address address) {
+    public void setAddress(Address address) {
         this.address = address;
     }
 }

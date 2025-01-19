@@ -11,28 +11,43 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Collection;
 
+/**
+ * Handles successful login events and redirects users based on their role.
+ */
 @Component
 public class CustomLoginSuccessHandler implements AuthenticationSuccessHandler {
 
+    /**
+     * Redirects the user to the appropriate page based on their role.
+     *
+     * @param request        the HTTP request
+     * @param response       the HTTP response
+     * @param authentication the authentication object containing user details
+     */
     @Override
-    public void onAuthenticationSuccess(final HttpServletRequest request, final HttpServletResponse response, final Authentication authentication) throws IOException, ServletException {
-        final Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+    public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response, Authentication authentication) throws IOException, ServletException {
+        // Get user roles from authentication
+        Collection<? extends GrantedAuthority> authorities = authentication.getAuthorities();
+        String redirectUrl = "/dashboard"; // Default redirect URL
 
-        String redirectUrl = "/dashboard"; // Default fallback URL
-
-        for (final GrantedAuthority authority : authorities) {
-            if ("ROLE_CUSTOMER".equals(authority.getAuthority())) {
-                redirectUrl = "/customer/home";
-                break;
-            } else if ("ROLE_RESTAURANT_EMPLOYEE".equals(authority.getAuthority())) {
-                redirectUrl = "/restaurant/management";
-                break;
-            } else if ("ROLE_DELIVERY_PERSON".equals(authority.getAuthority())) {
-                redirectUrl = "/delivery/allOrders";
-                break;
+        // Determine redirect URL based on user role
+        for (GrantedAuthority authority : authorities) {
+            switch (authority.getAuthority()) {
+                case "ROLE_CUSTOMER":
+                    redirectUrl = "/customer/home";
+                    break;
+                case "ROLE_RESTAURANT_EMPLOYEE":
+                    redirectUrl = "/restaurant/management";
+                    break;
+                case "ROLE_DELIVERY_PERSON":
+                    redirectUrl = "/delivery/allOrders";
+                    break;
+                default:
+                    break; // Keep default redirect if no roles match
             }
         }
 
+        // Redirect to the determined URL
         response.sendRedirect(redirectUrl);
     }
 }

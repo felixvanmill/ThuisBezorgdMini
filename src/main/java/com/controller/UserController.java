@@ -1,8 +1,8 @@
 package com.controller;
 
+import com.dto.UserRegistrationDTO;
 import com.model.AppUser;
 import com.model.UserRole;
-import com.dto.UserRegistrationDTO;
 import com.response.JwtResponse;
 import com.security.JwtTokenUtil;
 import com.service.UserService;
@@ -18,6 +18,7 @@ import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
 
 /**
  * Controller for managing users: registration, authentication, and CRUD operations.
@@ -39,29 +40,28 @@ public class UserController {
     private JwtTokenUtil jwtTokenUtil;
 
     /**
-     * Get all users.
+     * Fetch all users.
      *
-     * @return List of all users.
+     * @return List of all registered users.
      */
     @GetMapping
     public List<AppUser> getAllUsers() {
-        return this.userService.getAllUsers();
+        return userService.getAllUsers();
     }
 
     /**
-     * Get user by ID.
+     * Fetch a user by their ID.
      *
-     * @param id The user's ID.
+     * @param id User ID.
      * @return User details or error message.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<?> getUserById(@PathVariable final Long id) {
-        Optional<AppUser> userOptional = this.userService.getUserById(id);
-
+    public ResponseEntity<?> getUserById(@PathVariable Long id) {
+        Optional<AppUser> userOptional = userService.getUserById(id);
         if (userOptional.isPresent()) {
             return ResponseEntity.ok(userOptional.get());
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
         }
     }
 
@@ -69,119 +69,105 @@ public class UserController {
      * Register a new user.
      *
      * @param userRegistrationDTO User registration data.
-     * @return ResponseEntity indicating success or failure.
+     * @return Success or error response.
      */
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody @Valid final UserRegistrationDTO userRegistrationDTO) {
-        if (this.userService.userExists(userRegistrationDTO.getUsername())) {
-            return ResponseEntity.status(HttpStatus.CONFLICT).body("Username is already taken");
+    public ResponseEntity<?> registerUser(@RequestBody @Valid UserRegistrationDTO userRegistrationDTO) {
+        if (userService.userExists(userRegistrationDTO.getUsername())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(Map.of("error", "Username is already taken"));
         }
 
-        UserRole role;
         try {
-            // Convert string to UserRole enum
-            role = UserRole.valueOf(userRegistrationDTO.getRole().toUpperCase());
+            UserRole role = UserRole.valueOf(userRegistrationDTO.getRole().toUpperCase());
+            AppUser user = new AppUser(
+                    userRegistrationDTO.getUsername(),
+                    passwordEncoder.encode(userRegistrationDTO.getPassword()),
+                    role,
+                    userRegistrationDTO.getFullName()
+            );
+            userService.addUser(user);
+            return ResponseEntity.status(HttpStatus.CREATED).body(Map.of("message", "User registered successfully"));
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("Invalid role provided. Allowed roles: CUSTOMER, RESTAURANT_EMPLOYEE, DELIVERY_PERSON.");
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Invalid role provided. Allowed roles: CUSTOMER, RESTAURANT_EMPLOYEE, DELIVERY_PERSON."));
         }
-
-        // Create new user
-        final AppUser user = new AppUser(
-                userRegistrationDTO.getUsername(),
-                this.passwordEncoder.encode(userRegistrationDTO.getPassword()), // Encrypt password
-                role,
-                userRegistrationDTO.getFullName() // Access fullName properly
-        );
-
-        this.userService.addUser(user);
-        return ResponseEntity.status(HttpStatus.CREATED).body("User registered successfully");
     }
 
     /**
-     * Update an existing user.
+     * Update an existing user by their ID.
      *
-     * @param id          User ID to update.
+     * @param id          User ID.
      * @param userDetails Updated user details.
-     * @return ResponseEntity indicating success or failure.
+     * @return Success or error response.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable final Long id, @RequestBody final AppUser userDetails) {
-        Optional<AppUser> updatedUser = this.userService.updateUser(id, userDetails);
-
+    public ResponseEntity<?> updateUser(@PathVariable Long id, @RequestBody AppUser userDetails) {
+        Optional<AppUser> updatedUser = userService.updateUser(id, userDetails);
         if (updatedUser.isPresent()) {
             return ResponseEntity.ok(updatedUser.get());
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
         }
     }
 
     /**
-     * Delete a user.
+     * Delete a user by their ID.
      *
-     * @param id The user's ID to delete.
-     * @return ResponseEntity indicating success or failure.
+     * @param id User ID.
+     * @return Success or error response.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable final Long id) {
-        boolean deleted = this.userService.deleteUser(id);
-
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        boolean deleted = userService.deleteUser(id);
         if (deleted) {
-            return ResponseEntity.ok("User deleted successfully");
+            return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
         }
     }
 
     /**
-     * Authenticate user and return a JWT token.
+     * Authenticate a user and generate a JWT token.
      *
      * @param authenticationRequest User credentials.
-     * @return ResponseEntity with JWT token or error message.
+     * @return JWT token or error response.
      */
     @PostMapping("/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid final UserRegistrationDTO authenticationRequest) {
+    public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid UserRegistrationDTO authenticationRequest) {
         try {
-            // Authenticate the user
-            this.authenticationManager.authenticate(
+            authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             authenticationRequest.getUsername(),
                             authenticationRequest.getPassword()
                     )
             );
-        } catch (final AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Incorrect username or password");
+        } catch (AuthenticationException e) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Incorrect username or password"));
         }
 
-        // Fetch user after authentication
-        final Optional<AppUser> userOptional = this.userService.getUserByUsername(authenticationRequest.getUsername());
-
+        Optional<AppUser> userOptional = userService.getUserByUsername(authenticationRequest.getUsername());
         if (userOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
         }
 
-        final AppUser user = userOptional.get(); // Get the user from Optional
-
-        // Generate JWT
-        String jwt = this.jwtTokenUtil.generateToken(user.getUsername(), user.getRole().name());
-
+        AppUser user = userOptional.get();
+        String jwt = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().name());
         return ResponseEntity.ok(new JwtResponse(jwt));
     }
 
     /**
-     * Get user by username.
+     * Fetch a user by their username.
      *
-     * @param username The username to search for.
-     * @return ResponseEntity containing user details.
+     * @param username Username.
+     * @return User details or an error message.
      */
     @GetMapping("/username/{username}")
-    public ResponseEntity<?> getUserByUsername(@PathVariable final String username) {
-        final Optional<AppUser> userOptional = this.userService.getUserByUsername(username);
-
+    public ResponseEntity<?> getUserByUsername(@PathVariable String username) {
+        Optional<AppUser> userOptional = userService.getUserByUsername(username);
         if (userOptional.isPresent()) {
             return ResponseEntity.ok(userOptional.get());
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
         }
     }
 }

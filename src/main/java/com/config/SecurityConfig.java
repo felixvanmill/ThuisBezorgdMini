@@ -12,29 +12,50 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 
+/**
+ * Configures security settings for the application, including authentication, authorization, and logout handling.
+ */
 @Configuration
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
 
+    /**
+     * Constructor for injecting required services.
+     *
+     * @param userDetailsService   Service for loading user details.
+     * @param tokenBlacklistService Service for managing token blacklisting.
+     */
     public SecurityConfig(CustomUserDetailsService userDetailsService, TokenBlacklistService tokenBlacklistService) {
         this.userDetailsService = userDetailsService;
         this.tokenBlacklistService = tokenBlacklistService;
     }
 
+    /**
+     * Defines the security filter chain, including endpoint protection, login, and logout configurations.
+     *
+     * @param http The HttpSecurity object for configuring security settings.
+     * @return A configured SecurityFilterChain.
+     * @throws Exception If an error occurs during configuration.
+     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+                // Disable CSRF for simplicity (not recommended for production APIs)
                 .csrf(csrf -> csrf.disable())
+
+                // Define access rules for different endpoints
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/error").permitAll() // Open endpoints
-                        .requestMatchers("/customer/**").hasRole("CUSTOMER")
-                        .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE")
-                        .requestMatchers("/orders/customer/**").hasRole("CUSTOMER")
-                        .requestMatchers("/orders/restaurant/**").hasRole("RESTAURANT_EMPLOYEE")
-                        .anyRequest().authenticated() // All other requests require authentication
+                        .requestMatchers("/auth/login", "/error").permitAll() // Public endpoints
+                        .requestMatchers("/customer/**").hasRole("CUSTOMER") // Customer-specific endpoints
+                        .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE") // Restaurant employee endpoints
+                        .requestMatchers("/orders/customer/**").hasRole("CUSTOMER") // Customer order endpoints
+                        .requestMatchers("/orders/restaurant/**").hasRole("RESTAURANT_EMPLOYEE") // Restaurant order endpoints
+                        .anyRequest().authenticated() // Protect all other endpoints
                 )
+
+                // Configure login behavior
                 .formLogin(form -> form
                         .loginProcessingUrl("/auth/login")
                         .successHandler((request, response, authentication) -> {
@@ -50,22 +71,26 @@ public class SecurityConfig {
                         })
                         .permitAll()
                 )
+
+                // Configure logout behavior
                 .logout(logout -> logout
                         .logoutUrl("/auth/logout")
-                        .addLogoutHandler(customLogoutHandler())
+                        .addLogoutHandler(this.customLogoutHandler())
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setContentType("application/json");
                             response.setCharacterEncoding("UTF-8");
                             if (authentication == null || "anonymousUser".equals(authentication.getName())) {
                                 response.setStatus(400);
                                 response.getWriter().write("{\"message\": \"No user was logged in\"}");
-                                return;
+                            } else {
+                                String username = authentication.getName();
+                                response.getWriter().write("{\"message\": \"Logout successful\", \"user\": \"" + username + "\"}");
                             }
-                            String username = authentication.getName();
-                            response.getWriter().write("{\"message\": \"Logout successful\", \"user\": \"" + username + "\"}");
                         })
                         .permitAll()
                 )
+
+                // Configure behavior for unauthorized requests
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/json");
@@ -78,26 +103,43 @@ public class SecurityConfig {
         return http.build();
     }
 
+    /**
+     * Handles custom logout logic, such as token blacklisting.
+     *
+     * @return A LogoutHandler bean.
+     */
     @Bean
     public LogoutHandler customLogoutHandler() {
         return (request, response, authentication) -> {
             String tokenHeader = request.getHeader("Authorization");
             if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
                 String token = tokenHeader.replace("Bearer ", "");
-                tokenBlacklistService.blacklistToken(token);
+                this.tokenBlacklistService.blacklistToken(token);
             }
         };
     }
 
+    /**
+     * Password encoder bean using BCrypt hashing.
+     *
+     * @return A PasswordEncoder instance.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Configures the authentication manager with custom user details and password encoder.
+     *
+     * @param http The HttpSecurity object.
+     * @return A configured AuthenticationManager.
+     * @throws Exception If an error occurs during configuration.
+     */
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
         AuthenticationManagerBuilder authManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        authManagerBuilder.userDetailsService(this.userDetailsService).passwordEncoder(this.passwordEncoder());
+        authManagerBuilder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
         return authManagerBuilder.build();
     }
 }

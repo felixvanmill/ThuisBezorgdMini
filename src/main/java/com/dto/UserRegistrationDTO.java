@@ -3,7 +3,7 @@ package com.dto;
 import jakarta.validation.constraints.NotBlank;
 
 /**
- * Data Transfer Object for user registration.
+ * DTO for user registration details.
  */
 public class UserRegistrationDTO {
 
@@ -17,7 +17,7 @@ public class UserRegistrationDTO {
     private String role;
 
     @NotBlank
-    private String fullName; // Add the missing field
+    private String fullName;
 
     // Getters and Setters
     public String getUsername() {

@@ -22,7 +22,7 @@ class CustomerControllerIT {
      */
     @Test
     void testGetCustomerHomePage() {
-        ResponseEntity<String> response = restTemplate.getForEntity("/customer/home", String.class);
+        final ResponseEntity<String> response = this.restTemplate.getForEntity("/customer/home", String.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody().contains("Welcome to the Customer Dashboard"));
     }
@@ -33,7 +33,7 @@ class CustomerControllerIT {
      */
     @Test
     void testViewRestaurants() {
-        ResponseEntity<String> response = restTemplate.getForEntity("/customer/restaurants", String.class);
+        final ResponseEntity<String> response = this.restTemplate.getForEntity("/customer/restaurants", String.class);
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertTrue(response.getBody().contains("Available Restaurants"));
     }

@@ -15,6 +15,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Handles operations related to customer and restaurant orders, including viewing, updating, and managing order statuses.
+ */
 @RestController
 @RequestMapping("/orders")
 public class OrderController {
@@ -25,7 +28,9 @@ public class OrderController {
     @Autowired
     private RestaurantService restaurantService;
 
-    // Customer-specific endpoints
+    /**
+     * Fetches orders for a specific customer.
+     */
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/customer")
     public ResponseEntity<?> getOrdersForCustomer(@RequestParam String username) {
@@ -34,8 +39,7 @@ public class OrderController {
             if (!loggedInUser.equals(username)) {
                 return ResponseEntity.status(403).body(Map.of("error", "Access denied."));
             }
-            List<CustomerOrderDTO> orders = orderService.getOrdersForCustomer(username)
-                    .stream()
+            List<CustomerOrderDTO> orders = orderService.getOrdersForCustomer(username).stream()
                     .map(CustomerOrderDTO::new)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(orders);
@@ -44,6 +48,9 @@ public class OrderController {
         }
     }
 
+    /**
+     * Fetches a specific customer order by order number.
+     */
     @PreAuthorize("hasRole('CUSTOMER')")
     @GetMapping("/customer/{orderNumber}")
     public ResponseEntity<?> getCustomerOrderByOrderNumber(@RequestParam String username, @PathVariable String orderNumber) {
@@ -59,14 +66,15 @@ public class OrderController {
         }
     }
 
-    // Restaurant-specific endpoints
+    /**
+     * Fetches orders for the logged-in restaurant employee.
+     */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/restaurant")
     public ResponseEntity<?> getOrdersForLoggedInEmployee(@RequestParam String slug) {
         try {
             String username = getAuthenticatedUsername();
-            List<CustomerOrderDTO> orders = restaurantService.getOrdersForEmployee(slug, username)
-                    .stream()
+            List<CustomerOrderDTO> orders = restaurantService.getOrdersForEmployee(slug, username).stream()
                     .map(CustomerOrderDTO::new)
                     .collect(Collectors.toList());
             return ResponseEntity.ok(orders);
@@ -75,6 +83,9 @@ public class OrderController {
         }
     }
 
+    /**
+     * Confirms an order for a specific restaurant.
+     */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @PostMapping("/restaurant/{slug}/{orderId}/confirm")
     public ResponseEntity<?> confirmOrder(@PathVariable String slug, @PathVariable Long orderId) {
@@ -86,19 +97,17 @@ public class OrderController {
         }
     }
 
-    // Shared endpoints
+    /**
+     * Fetches an order by its numeric ID or alphanumeric order number.
+     */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/{identifier}")
     public ResponseEntity<?> getOrderByIdentifier(@PathVariable String identifier) {
         try {
-            CustomerOrder order;
-            if (identifier.matches("\\d+")) { // Numeric ID
-                order = orderService.getOrderById(Long.parseLong(identifier));
-            } else { // Alphanumeric order number
-                order = orderService.getOrderByOrderNumber(identifier);
-            }
+            CustomerOrder order = identifier.matches("\\d+")
+                    ? orderService.getOrderById(Long.parseLong(identifier))
+                    : orderService.getOrderByOrderNumber(identifier);
 
-            // Ensure the logged-in employee has access
             String loggedInUser = getAuthenticatedUsername();
             if (!restaurantService.isEmployeeAuthorizedForRestaurant(loggedInUser, order.getRestaurant().getSlug())) {
                 return ResponseEntity.status(403).body(Map.of("error", "Access denied: Order does not belong to your restaurant."));
@@ -110,21 +119,19 @@ public class OrderController {
         }
     }
 
-
+    /**
+     * Updates the status of an order for a specific restaurant.
+     */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @PostMapping("/restaurant/{slug}/{orderId}/updateStatus")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable String slug,
-            @PathVariable String orderId, // Keep as String for alphanumeric IDs
+            @PathVariable String orderId, // Can handle alphanumeric IDs
             @RequestParam String status) {
         try {
-            // Determine if `orderId` is numeric or alphanumeric
-            CustomerOrder order;
-            if (orderId.matches("\\d+")) {
-                order = orderService.getOrderById(Long.parseLong(orderId));
-            } else {
-                order = orderService.getOrderByOrderNumber(orderId);
-            }
+            CustomerOrder order = orderId.matches("\\d+")
+                    ? orderService.getOrderById(Long.parseLong(orderId))
+                    : orderService.getOrderByOrderNumber(orderId);
 
             if (!order.getRestaurant().getSlug().equals(slug)) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Order does not belong to this restaurant."));
@@ -142,7 +149,9 @@ public class OrderController {
         }
     }
 
-    // ✅ Add this endpoint to fetch orders by status
+    /**
+     * Fetches orders based on their status.
+     */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/status")
     public ResponseEntity<?> getOrdersByStatus(@RequestParam String status) {
@@ -162,8 +171,10 @@ public class OrderController {
         }
     }
 
+    /**
+     * Retrieves the username of the currently authenticated user.
+     */
     private String getAuthenticatedUsername() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
-
 }

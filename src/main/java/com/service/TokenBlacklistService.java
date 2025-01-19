@@ -1,3 +1,5 @@
+// src/main/java/com/service/TokenBlacklistService.java
+
 package com.service;
 
 import org.springframework.stereotype.Service;
@@ -12,7 +14,8 @@ public class TokenBlacklistService {
 
     /**
      * Add a token to the blacklist.
-     * @param token the JWT to blacklist
+     *
+     * @param token the token to blacklist.
      */
     public void blacklistToken(String token) {
         blacklistedTokens.add(token);
@@ -20,8 +23,9 @@ public class TokenBlacklistService {
 
     /**
      * Check if a token is blacklisted.
-     * @param token the JWT to check
-     * @return true if the token is blacklisted, false otherwise
+     *
+     * @param token the token to check.
+     * @return true if blacklisted, false otherwise.
      */
     public boolean isTokenBlacklisted(String token) {
         return blacklistedTokens.contains(token);

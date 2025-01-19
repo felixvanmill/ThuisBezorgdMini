@@ -30,10 +30,10 @@ class AddressServiceTest {
      */
     @Test
     void testGetAddressById() {
-        Address address = new Address("Main St", "123", "12345", "City");
-        when(addressRepository.findById(1L)).thenReturn(Optional.of(address));
+        final Address address = new Address("Main St", "123", "12345", "City");
+        when(this.addressRepository.findById(1L)).thenReturn(Optional.of(address));
 
-        Address result = addressService.getAddressById(1L);
+        final Address result = this.addressService.getAddressById(1L);
 
         assertNotNull(result);
         assertEquals("Main St", result.getStreetName());
@@ -45,9 +45,9 @@ class AddressServiceTest {
      */
     @Test
     void testGetAddressById_NotFound() {
-        when(addressRepository.findById(1L)).thenReturn(Optional.empty());
+        when(this.addressRepository.findById(1L)).thenReturn(Optional.empty());
 
-        assertThrows(RuntimeException.class, () -> addressService.getAddressById(1L));
+        assertThrows(RuntimeException.class, () -> this.addressService.getAddressById(1L));
     }
 
     /**
@@ -56,10 +56,10 @@ class AddressServiceTest {
      */
     @Test
     void testCreateAddress() {
-        Address address = new Address("Main St", "123", "12345", "City");
-        when(addressRepository.save(any(Address.class))).thenReturn(address);
+        final Address address = new Address("Main St", "123", "12345", "City");
+        when(this.addressRepository.save(any(Address.class))).thenReturn(address);
 
-        Address result = addressService.createAddress(address);
+        final Address result = this.addressService.createAddress(address);
 
         assertNotNull(result);
         assertEquals("Main St", result.getStreetName());
