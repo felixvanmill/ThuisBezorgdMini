@@ -1,5 +1,6 @@
 package com.config;
 
+import com.security.JwtAuthorizationFilter;
 import com.service.CustomUserDetailsService;
 import com.service.TokenBlacklistService;
 import org.springframework.context.annotation.Bean;
@@ -10,54 +11,55 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 /**
- * Configures security settings for the application, including authentication, authorization, and logout handling.
+ * Sets up security rules for the app, like login, logout, and protected routes.
  */
 @Configuration
 public class SecurityConfig {
 
     private final CustomUserDetailsService userDetailsService;
     private final TokenBlacklistService tokenBlacklistService;
+    private final JwtAuthorizationFilter jwtAuthorizationFilter;
 
     /**
-     * Constructor for injecting required services.
-     *
-     * @param userDetailsService   Service for loading user details.
-     * @param tokenBlacklistService Service for managing token blacklisting.
+     * Constructor to link necessary services.
      */
-    public SecurityConfig(CustomUserDetailsService userDetailsService, TokenBlacklistService tokenBlacklistService) {
+    public SecurityConfig(CustomUserDetailsService userDetailsService,
+                          TokenBlacklistService tokenBlacklistService,
+                          JwtAuthorizationFilter jwtAuthorizationFilter) {
         this.userDetailsService = userDetailsService;
         this.tokenBlacklistService = tokenBlacklistService;
+        this.jwtAuthorizationFilter = jwtAuthorizationFilter;
     }
 
     /**
-     * Defines the security filter chain, including endpoint protection, login, and logout configurations.
-     *
-     * @param http The HttpSecurity object for configuring security settings.
-     * @return A configured SecurityFilterChain.
-     * @throws Exception If an error occurs during configuration.
+     * Defines security rules for HTTP requests.
      */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Disable CSRF for simplicity (not recommended for production APIs)
+                // Turn off CSRF protection (not needed for APIs)
                 .csrf(csrf -> csrf.disable())
 
-                // Define access rules for different endpoints
+                // Define which endpoints are public or protected
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/error").permitAll() // Public endpoints
-                        .requestMatchers("/customer/**").hasRole("CUSTOMER") // Customer-specific endpoints
-                        .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE") // Restaurant employee endpoints
-                        .requestMatchers("/orders/customer/**").hasRole("CUSTOMER") // Customer order endpoints
-                        .requestMatchers("/orders/restaurant/**").hasRole("RESTAURANT_EMPLOYEE") // Restaurant order endpoints
-                        .anyRequest().authenticated() // Protect all other endpoints
+                        .requestMatchers("/auth/login", "/error").permitAll() // Public routes
+                        .requestMatchers("/customer/**").hasRole("CUSTOMER") // Only customers
+                        .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE") // Only restaurant employees
+                        .requestMatchers("/orders/customer/**").hasRole("CUSTOMER") // Orders for customers
+                        .requestMatchers("/orders/restaurant/**").hasRole("RESTAURANT_EMPLOYEE") // Orders for restaurants
+                        .anyRequest().authenticated() // Everything else needs login
                 )
 
-                // Configure login behavior
+                // Add the JWT filter to check tokens
+                .addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
+
+                // Handle login
                 .formLogin(form -> form
-                        .loginProcessingUrl("/auth/login")
+                        .loginProcessingUrl("/auth/login") // Where the login request is sent
                         .successHandler((request, response, authentication) -> {
                             response.setContentType("application/json");
                             response.setCharacterEncoding("UTF-8");
@@ -72,10 +74,10 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
-                // Configure logout behavior
+                // Handle logout
                 .logout(logout -> logout
-                        .logoutUrl("/auth/logout")
-                        .addLogoutHandler(this.customLogoutHandler())
+                        .logoutUrl("/auth/logout") // Where the logout request is sent
+                        .addLogoutHandler(customLogoutHandler()) // Blacklist the token on logout
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setContentType("application/json");
                             response.setCharacterEncoding("UTF-8");
@@ -90,7 +92,7 @@ public class SecurityConfig {
                         .permitAll()
                 )
 
-                // Configure behavior for unauthorized requests
+                // Handle unauthorized access
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint((request, response, authException) -> {
                             response.setContentType("application/json");
@@ -104,37 +106,29 @@ public class SecurityConfig {
     }
 
     /**
-     * Handles custom logout logic, such as token blacklisting.
-     *
-     * @return A LogoutHandler bean.
+     * Handles custom logic for logout (blacklisting tokens).
      */
     @Bean
     public LogoutHandler customLogoutHandler() {
         return (request, response, authentication) -> {
             String tokenHeader = request.getHeader("Authorization");
             if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
-                String token = tokenHeader.replace("Bearer ", "");
-                this.tokenBlacklistService.blacklistToken(token);
+                String token = tokenHeader.substring(7); // Remove "Bearer " from the header
+                tokenBlacklistService.blacklistToken(token); // Add the token to the blacklist
             }
         };
     }
 
     /**
-     * Password encoder bean using BCrypt hashing.
-     *
-     * @return A PasswordEncoder instance.
+     * Creates a password encoder to hash passwords.
      */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
+        return new BCryptPasswordEncoder(); // BCrypt is secure for hashing passwords
     }
 
     /**
-     * Configures the authentication manager with custom user details and password encoder.
-     *
-     * @param http The HttpSecurity object.
-     * @return A configured AuthenticationManager.
-     * @throws Exception If an error occurs during configuration.
+     * Configures authentication with user details and password encoder.
      */
     @Bean
     public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {

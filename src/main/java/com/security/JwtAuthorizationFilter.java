@@ -1,53 +1,79 @@
 package com.security;
 
-import org.springframework.web.filter.OncePerRequestFilter;
+import com.service.TokenBlacklistService;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
+import org.springframework.web.filter.OncePerRequestFilter;
+
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-
 import java.io.IOException;
 
 /**
- * A filter to check JWT tokens in every request.
+ * This filter checks every request for a valid JWT token.
+ * It blocks blacklisted tokens and sets authentication for valid ones.
  */
 @Component
 public class JwtAuthorizationFilter extends OncePerRequestFilter {
 
     private final JwtTokenUtil jwtTokenUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    // Use JwtTokenUtil to validate tokens
-    public JwtAuthorizationFilter(final JwtTokenUtil jwtTokenUtil) {
+    /**
+     * Constructor to set up token utilities and blacklist service.
+     *
+     * @param jwtTokenUtil          Used to handle JWT tokens.
+     * @param tokenBlacklistService Used to check if tokens are blacklisted.
+     */
+    public JwtAuthorizationFilter(JwtTokenUtil jwtTokenUtil, TokenBlacklistService tokenBlacklistService) {
         this.jwtTokenUtil = jwtTokenUtil;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     /**
-     * Checks if a JWT token is present and valid.
+     * Checks the request for a JWT token, validates it, and sets the user as authenticated if valid.
      */
     @Override
-    protected void doFilterInternal(final HttpServletRequest request,
-                                    final HttpServletResponse response,
-                                    final FilterChain chain) throws IOException, ServletException {
-        final String token = getJwtFromRequest(request);
+    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
+            throws ServletException, IOException {
+        // Get the token from the Authorization header
+        String token = getJwtFromRequest(request);
 
-        // Validate the token if it's there
-        if (token != null && jwtTokenUtil.validateToken(token)) {
-            // Logic to authenticate the user can go here
+        if (token != null) {
+            // If the token is blacklisted, block the request
+            if (tokenBlacklistService.isTokenBlacklisted(token)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("{\"error\": \"Token is blacklisted.\"}");
+                return; // Stop further processing
+            }
+
+            // If the token is valid, set the user as authenticated
+            if (jwtTokenUtil.validateToken(token)) {
+                Authentication auth = jwtTokenUtil.getAuthentication(token);
+                SecurityContextHolder.getContext().setAuthentication(auth);
+            }
         }
 
-        // Continue the filter chain
+        // Continue with the rest of the filter chain
         chain.doFilter(request, response);
     }
 
     /**
-     * Gets the JWT token from the Authorization header.
+     * Extracts the token from the Authorization header.
+     *
+     * @param request The incoming HTTP request.
+     * @return The token (without the "Bearer " prefix) or null if not found.
      */
-    private String getJwtFromRequest(final HttpServletRequest request) {
-        final String bearerToken = request.getHeader("Authorization");
-        // Check if the header starts with "Bearer "
+    private String getJwtFromRequest(HttpServletRequest request) {
+        // Get the Authorization header
+        String bearerToken = request.getHeader("Authorization");
+        // Check if it starts with "Bearer " and return the token part
         if (bearerToken != null && bearerToken.startsWith("Bearer ")) {
-            return bearerToken.substring(7); // Remove "Bearer " and return the token
+            return bearerToken.substring(7); // Remove "Bearer " from the string
         }
         return null; // No valid token found
     }

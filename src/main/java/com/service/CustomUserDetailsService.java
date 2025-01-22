@@ -1,5 +1,3 @@
-// src/main/java/com/service/CustomUserDetailsService.java
-
 package com.service;
 
 import com.model.AppUser;
@@ -16,7 +14,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 
 /**
- * Service to load user-specific data for authentication.
+ * Service for loading user details during authentication.
  */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -25,30 +23,30 @@ public class CustomUserDetailsService implements UserDetailsService {
     private AppUserRepository userRepository;
 
     /**
-     * Loads user details by username for authentication.
+     * Loads user details by username.
      *
-     * @param username The username to look up.
-     * @return UserDetails containing the user's authentication data.
+     * @param username The username to search for.
+     * @return A UserDetails object with user info.
      * @throws UsernameNotFoundException If the user is not found.
      */
     @Override
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        // Find the user in the database
+        // Find user in the database
         AppUser user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
 
-        // Assign the user's role as a GrantedAuthority
+        // Get the user's role
         GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
 
-        // Create and return a Spring Security User object
+        // Return user details for Spring Security
         return new User(
-                user.getUsername(),      // Username
-                user.getPassword(),      // Encrypted password
-                true,                    // Account is enabled
-                true,                    // Account is not expired
-                true,                    // Credentials are not expired
-                true,                    // Account is not locked
-                Collections.singleton(authority) // User's role as a single authority
+                user.getUsername(),
+                user.getPassword(),
+                true, // Account is enabled
+                true, // Account is not expired
+                true, // Credentials are not expired
+                true, // Account is not locked
+                Collections.singleton(authority) // User's role
         );
     }
 }
