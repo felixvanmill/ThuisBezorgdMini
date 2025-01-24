@@ -107,8 +107,8 @@ The system is built using the following layers:
 - **Spring Security**: For authentication and authorization.
 - **JWT**: Token-based security.
 - **PostgreSQL**: Database.
-- **Swagger**: API documentation.
 - **Maven**: Build automation.
+- **SDK** used is coretto 17.0.13
 
 # Future Enhancements
 
