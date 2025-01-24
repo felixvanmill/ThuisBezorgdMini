@@ -29,9 +29,10 @@ public class AppUser {
     @JoinColumn(name = "restaurant_id") // Link to a restaurant (optional)
     private Restaurant restaurant;
 
-    @ManyToOne
-    @JoinColumn(name = "address_id") // Link to an address (optional)
+    @OneToOne
+    @JoinColumn(name = "address_id", unique = true, nullable = false) // Links to an adress.
     private Address address;
+
 
     // Default constructor required by JPA
     public AppUser() {

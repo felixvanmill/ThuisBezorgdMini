@@ -11,16 +11,16 @@ import java.util.Collections;
 import java.util.Date;
 
 /**
- * Utility class for handling JWT operations such as generation, validation, and extraction of claims.
+ * Utility class for handling JWT operations such as generation, validation.
  */
 @Component
 public class JwtTokenUtil {
 
-    private final String secretKey = "yourSecretKey"; // Replace with a secure key in production
-    private final long expirationTime = 1000 * 60 * 60; // Token expiration time (1 hour)
+    private final String secretKey = "yourSecretKey"; // Should replace this with a secure key in production
+    private final long expirationTime = 1000 * 60 * 60; // Token expiration time is set to (1 hour)
 
     /**
-     * Generates a JWT token for a given username and role.
+     * This function generates a JWT token for a given username and role.
      *
      * @param username The username of the authenticated user.
      * @param role     The role of the authenticated user.
