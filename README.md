@@ -57,7 +57,7 @@ To run this project locally, follow these steps:
     mvn clean install
     mvn spring-boot:run
   ```
-4. ALL Endpoints can be accessed, downloaded , tested from the datadump out of Postman.
+4. ALL Endpoints can be accessed, downloaded , tested from the datadump out of Postman. Find the the PostmanDump in the root folder.
 
 ## In case no Postman: API Endpoints
 
@@ -84,7 +84,7 @@ To run this project locally, follow these steps:
 - **DELETE /menu-items/{id}**  
   Remove a menu item.
 - **POST /menu-items/bulk**  
-  Bulk upload menu items via CSV.
+  Bulk upload menu items via CSV. This file you can find in the root folder with CSV extension. 
 
 ### Delivery
 
