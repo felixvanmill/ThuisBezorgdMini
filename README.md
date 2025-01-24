@@ -84,7 +84,7 @@ To run this project locally, follow these steps:
 - **DELETE /menu-items/{id}**  
   Remove a menu item.
 - **POST /menu-items/bulk**  
-  Bulk upload menu items via CSV. This file you can find in the root folder with CSV extension. 
+  Bulk upload menu items via CSV. This file you can find in the root folder as MenuItem.CSV
 
 ### Delivery
 
