@@ -34,10 +34,10 @@ To run this project locally, follow these steps:
 
 ### Prerequisites
 
-- Java 17+
-- Maven
-- PostgreSQL (or any supported database)
-- Docker (optional, for running via containers)
+- Java Version: 17
+- Maven 3.8.1
+- PostgreSQL
+- IDE: IntelliJ IDEA or another IDE supporting Maven and Java 17.
 
 ### Steps
 
@@ -108,7 +108,6 @@ The system is built using the following layers:
 - **JWT**: Token-based security.
 - **PostgreSQL**: Database.
 - **Maven**: Build automation.
-- **SDK** used is coretto 17.0.13
 
 # Future Enhancements
 
