@@ -1,22 +1,27 @@
 package com.controller;
 
 import com.dto.RestaurantDTO;
+import com.dto.OrderDTO;
 import com.model.CustomerOrder;
 import com.model.MenuItem;
 import com.model.OrderStatus;
 import com.model.Restaurant;
-import com.service.RestaurantService;
+import com.repository.AppUserRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.MenuItemRepository;
+import com.service.RestaurantService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Handles operations related to restaurants, including menu management and order updates.
@@ -33,6 +38,9 @@ public class RestaurantController {
 
     @Autowired
     private CustomerOrderRepository customerOrderRepository;
+
+    @Autowired
+    private AppUserRepository appUserRepository;
 
     /**
      * Retrieves the restaurant menu for customers, excluding inventory details.
@@ -71,16 +79,16 @@ public class RestaurantController {
             @PathVariable String identifier,
             @RequestParam String status) {
         try {
-            // Fetch the restaurant by slug
+            // Fetch restaurant by slug
             Restaurant restaurant = restaurantService.getRestaurantBySlug(slug)
                     .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
-            // Fetch the order by ID or order number
+            // Fetch order by ID or order number
             CustomerOrder order = identifier.matches("\\d+")
                     ? restaurantService.getOrderById(Long.parseLong(identifier))
                     : restaurantService.getOrderByOrderNumber(identifier);
 
-            // Validate that the order belongs to the restaurant
+            // Validate restaurant ownership of the order
             if (!order.getRestaurant().getId().equals(restaurant.getId())) {
                 throw new RuntimeException("Order does not belong to the specified restaurant.");
             }
@@ -126,6 +134,79 @@ public class RestaurantController {
                 "itemId", menuItem.getId(),
                 "isAvailable", menuItem.isAvailable()
         ));
+    }
+
+    /**
+     * Downloads a CSV of orders for the authenticated restaurant.
+     */
+    @GetMapping("/orders/download")
+    public ResponseEntity<byte[]> downloadOrdersAsCsv() {
+        String username = getLoggedInUsername();
+
+        // Fetch orders with eager loading using a custom query
+        List<OrderDTO> orders = customerOrderRepository.findByRestaurant_IdWithDetails(
+                getAuthenticatedRestaurantId(username)
+        );
+
+        // Generate CSV content
+        String csvContent = generateCsvFromDTO(orders);
+        byte[] csvBytes = csvContent.getBytes(StandardCharsets.UTF_8);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=orders.csv");
+        headers.add(HttpHeaders.CONTENT_TYPE, "text/csv");
+
+        return ResponseEntity.ok().headers(headers).body(csvBytes);
+    }
+
+    /**
+     * Generates CSV content from a list of OrderDTOs.
+     * This method fetches items for each order using eager loading to avoid lazy initialization issues.
+     */
+    private String generateCsvFromDTO(List<OrderDTO> orders) {
+        StringBuilder csvBuilder = new StringBuilder();
+        csvBuilder.append("Order Number,Total Price,Status,Customer,Items\n");
+
+        for (OrderDTO order : orders) {
+            String items = customerOrderRepository.findByOrderNumberWithItems(order.getOrderNumber())
+                    .orElseThrow(() -> new RuntimeException("Order not found"))
+                    .getOrderItems().stream()
+                    .map(item -> item.getMenuItem().getName() + " x" + item.getQuantity())
+                    .collect(Collectors.joining("; "));
+
+            order.setItems(items);
+
+            csvBuilder.append(String.format(
+                    "%s,%.2f,%s,%s,%s\n",
+                    order.getOrderNumber(),
+                    order.getTotalPrice(),
+                    order.getStatus(),
+                    escapeCsv(order.getCustomer()),
+                    escapeCsv(order.getItems())
+            ));
+        }
+
+        return csvBuilder.toString();
+    }
+
+    /**
+     * Retrieves the authenticated user's restaurant ID.
+     */
+    private Long getAuthenticatedRestaurantId(String username) {
+        return appUserRepository.findByUsername(username)
+                .map(user -> user.getRestaurant() != null ? user.getRestaurant().getId() : null)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found or not associated with a restaurant."));
+    }
+
+    /**
+     * Escapes CSV-specific characters in a string.
+     */
+    private String escapeCsv(String input) {
+        if (input == null) return "";
+        if (input.contains(",") || input.contains("\n") || input.contains("\"")) {
+            input = "\"" + input.replace("\"", "\"\"") + "\"";
+        }
+        return input;
     }
 
     /**

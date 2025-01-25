@@ -1,6 +1,7 @@
 package com.repository;
 
 import com.model.AppUser;
+import com.repository.AppUserRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -18,4 +19,5 @@ public interface AppUserRepository extends JpaRepository<AppUser, Long> {
      * @return an Optional containing the user if found, or empty if not.
      */
     Optional<AppUser> findByUsername(String username);
+
 }
