@@ -59,7 +59,7 @@ To run this project locally, follow these steps:
   ```
 4. ALL Endpoints can be accessed, downloaded , tested from the datadump out of Postman. Find the the PostmanDump in the root folder.
 
-## In case no Postman: API Endpoints
+## In case no Postman: Some of the API Endpoints
 
 ### Authentication
 
