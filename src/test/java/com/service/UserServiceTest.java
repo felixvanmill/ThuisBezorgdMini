@@ -58,4 +58,32 @@ class UserServiceTest {
         assertTrue(result.isPresent());
         assertEquals("testuser", result.get().getUsername());
     }
+
+    @Test
+    void testUserExists() {
+        // Arrange
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(new AppUser()));
+
+        // Act
+        boolean exists = userService.userExists("testuser");
+
+        // Assert
+        assertTrue(exists);
+        verify(userRepository, times(1)).findByUsername("testuser");
+    }
+
+
+    @Test
+    void testGetUserByUsername() {
+        // Mock user
+        AppUser mockUser = new AppUser("testuser", "encodedPassword", UserRole.CUSTOMER, "Test User");
+
+        when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(mockUser));
+
+        Optional<AppUser> result = userService.getUserByUsername("testuser");
+
+        assertTrue(result.isPresent());
+        assertEquals("testuser", result.get().getUsername());
+        verify(userRepository, times(1)).findByUsername("testuser");
+    }
 }
