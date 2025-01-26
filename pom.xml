@@ -102,12 +102,6 @@
 			<version>5.2</version>
 		</dependency>
 
-		<!-- For Spring Boot testing utility class -->
-		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-test</artifactId>
-			<scope>test</scope>
-		</dependency>
 
 
 	</dependencies>
