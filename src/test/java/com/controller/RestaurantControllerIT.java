@@ -35,7 +35,7 @@ class RestaurantControllerIT {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        // Form data payload for login
+        // Hardcoded credentials (should be replaced with configurable test data)
         String loginPayload = "username=marysmith&password=password123";
 
         // Make the login request
@@ -43,14 +43,14 @@ class RestaurantControllerIT {
         ResponseEntity<String> response = restTemplate.postForEntity(baseUrl + "/auth/login", request, String.class);
 
         // Ensure login is successful
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Login request failed");
 
         // Extract the JSESSIONID from the Set-Cookie header
         String setCookieHeader = response.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
         assertNotNull(setCookieHeader, "Set-Cookie header is missing");
 
-        // Extract JSESSIONID
-        sessionId = setCookieHeader.split(";")[0]; // JSESSIONID=abc123
+        // Simple extraction of JSESSIONID; might fail if cookie format changes
+        sessionId = setCookieHeader.split(";")[0]; // Example: JSESSIONID=abc123
         assertTrue(sessionId.startsWith("JSESSIONID="), "JSESSIONID is not present in the cookie");
     }
 
@@ -58,30 +58,30 @@ class RestaurantControllerIT {
     void testGetMenuManagementBySlug() {
         final String slug = "pizza-place";
 
-        // Prepare headers with JSESSIONID
+        // Prepare headers with JSESSIONID for authentication
         HttpHeaders headers = new HttpHeaders();
-        headers.set(HttpHeaders.COOKIE, sessionId); // Add the session cookie
+        headers.set(HttpHeaders.COOKIE, sessionId); // Add session cookie
 
         // Create the HTTP entity with headers
         HttpEntity<Void> request = new HttpEntity<>(headers);
 
-        // Send the GET request
+        // Send the GET request to retrieve menu items
         ResponseEntity<List<MenuItemDTO>> response = restTemplate.exchange(
                 baseUrl + "/restaurant/" + slug + "/menu-management",
                 HttpMethod.GET,
                 request,
-                new ParameterizedTypeReference<>() {}
+                new ParameterizedTypeReference<>() {} // Correctly handles List<MenuItemDTO>
         );
 
-        // Assertions to verify the response
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertFalse(response.getBody().isEmpty());
+        // Ensure the response is successful
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Expected HTTP 200 OK");
+        assertNotNull(response.getBody(), "Response body should not be null");
+        assertFalse(response.getBody().isEmpty(), "Menu should contain at least one item");
 
-        // Verify each menu item has necessary fields
+        // Verify each menu item has necessary fields populated
         for (MenuItemDTO item : response.getBody()) {
-            assertNotNull(item.getName());
-            assertNotNull(item.getId());
+            assertNotNull(item.getName(), "Menu item name should not be null");
+            assertNotNull(item.getId(), "Menu item ID should not be null");
         }
     }
 }
