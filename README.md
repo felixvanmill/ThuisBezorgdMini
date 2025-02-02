@@ -38,6 +38,7 @@ To run this project locally, follow these steps:
 - Maven 3.8.1
 - PostgreSQL
 - IDE: IntelliJ IDEA or another IDE supporting Maven and Java 17.
+- PgAdmin
 
 ### Steps
 
