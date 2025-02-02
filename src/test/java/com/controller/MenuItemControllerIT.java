@@ -27,14 +27,14 @@ class MenuItemControllerIT {
     void setup() {
         baseUrl = "http://localhost:" + port;
 
-        // Add PATCH support for RestTemplate
+        // Add PATCH support for RestTemplate (since PATCH is not supported by default)
         restTemplate.getRestTemplate().setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
         // Prepare form data for login
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
 
-        // Form data payload
+        // Form data payload (hardcoded credentials, should be replaced with test config)
         String loginPayload = "username=marysmith&password=password123";
 
         // Make the login request
@@ -48,8 +48,8 @@ class MenuItemControllerIT {
         String setCookieHeader = response.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
         assertNotNull(setCookieHeader, "Set-Cookie header is missing");
 
-        // Extract JSESSIONID
-        sessionId = setCookieHeader.split(";")[0]; // JSESSIONID=abc123
+        // Extract JSESSIONID from cookie (might fail if cookie format changes)
+        sessionId = setCookieHeader.split(";")[0]; // Example: JSESSIONID=abc123
         assertTrue(sessionId.startsWith("JSESSIONID="), "JSESSIONID is not present in the cookie");
     }
 
@@ -57,15 +57,15 @@ class MenuItemControllerIT {
     void testUpdateMenuItemAvailability() {
         final Long itemId = 1L;
 
-        // Prepare headers with JSESSIONID
+        // Prepare headers with JSESSIONID for authentication
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         headers.set(HttpHeaders.COOKIE, sessionId); // Add the session cookie
 
-        // Create the request payload
+        // Create the request payload (JSON body)
         HttpEntity<String> request = new HttpEntity<>("{\"isAvailable\": false}", headers);
 
-        // Send the PATCH request
+        // Send the PATCH request to update menu item availability
         ResponseEntity<String> response = restTemplate.exchange(
                 baseUrl + "/restaurant/menu/items/" + itemId + "/availability",
                 HttpMethod.PATCH,
@@ -73,9 +73,10 @@ class MenuItemControllerIT {
                 String.class
         );
 
-        // Assertions to verify the response
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertTrue(response.getBody().contains("Menu item availability updated successfully"));
+        // Assertions to verify the response is as expected
+        assertEquals(HttpStatus.OK, response.getStatusCode(), "Expected HTTP 200 OK");
+        assertNotNull(response.getBody(), "Response body should not be null");
+        assertTrue(response.getBody().contains("Menu item availability updated successfully"),
+                "Response should confirm successful update");
     }
 }
