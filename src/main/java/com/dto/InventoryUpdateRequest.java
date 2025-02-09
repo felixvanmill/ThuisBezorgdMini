@@ -8,6 +8,13 @@ public class InventoryUpdateRequest {
     private Long menuItemId;
     private int quantity;
 
+    public InventoryUpdateRequest() {}
+
+    public InventoryUpdateRequest(Long menuItemId, int quantity) {
+        this.menuItemId = menuItemId;
+        this.quantity = quantity;
+    }
+
     // Getters and setters
     public Long getMenuItemId() {
         return menuItemId;

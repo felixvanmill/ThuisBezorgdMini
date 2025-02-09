@@ -112,21 +112,44 @@ public class MenuItemService {
                             .setSkipHeaderRecord(true)
                             .build());
 
+            // ✅ Controleer correct of de header "name" bestaat
+            if (!parser.getHeaderMap().containsKey("name")) {
+                errorMessages.add("CSV is missing the 'name' column.");
+                return errorMessages; // **Fix: Stop verwerking en retourneer fout**
+            }
+
             for (CSVRecord record : parser) {
                 try {
-                    String name = record.get("name");
-                    if (name == null || name.isBlank()) {
-                        throw new IllegalArgumentException("Missing or empty 'name' field.");
+                    String name = "";
+                    if (record.isMapped("name")) {
+                        name = record.get("name");
+                        if (name == null) {
+                            name = "";
+                        }
                     }
 
-                    String description = record.get("description") != null ? record.get("description") : "No description provided";
-                    double price = record.get("price") != null ? Double.parseDouble(record.get("price")) : 0.0;
-                    int inventory = record.get("inventory") != null ? Integer.parseInt(record.get("inventory")) : 0;
-                    String itemId = record.get("id");
+                    if (name.isBlank()) {
+                        errorMessages.add("Row " + record.getRecordNumber() + ": Missing or empty 'name' field.");
+                        continue;
+                    }
 
-                    MenuItem menuItem = itemId != null
-                            ? menuItemRepository.findById(Long.parseLong(itemId)).orElse(new MenuItem())
-                            : new MenuItem();
+
+
+                    String description = record.isMapped("description") ? record.get("description") : "No description provided";
+                    String priceStr = record.isMapped("price") ? record.get("price") : "0.0";
+                    String inventoryStr = record.isMapped("inventory") ? record.get("inventory") : "0";
+
+                    double price = !priceStr.isBlank() ? Double.parseDouble(priceStr) : 0.0;
+                    int inventory = !inventoryStr.isBlank() ? Integer.parseInt(inventoryStr) : 0;
+
+                    String itemId = record.isMapped("id") ? record.get("id") : null;
+
+                    MenuItem menuItem;
+                    if (itemId != null && !itemId.isBlank()) {
+                        menuItem = menuItemRepository.findById(Long.parseLong(itemId)).orElse(new MenuItem());
+                    } else {
+                        menuItem = new MenuItem();
+                    }
 
                     menuItem.setName(name);
                     menuItem.setDescription(description);
@@ -135,15 +158,20 @@ public class MenuItemService {
 
                     menuItemRepository.save(menuItem);
                 } catch (Exception e) {
+                    System.out.println("DEBUG ERROR: " + e.getMessage());
                     errorMessages.add("Row " + record.getRecordNumber() + ": " + e.getMessage());
                 }
             }
         } catch (Exception e) {
+            System.out.println("DEBUG FILE ERROR: " + e.getMessage());
             errorMessages.add("Failed to process file: " + e.getMessage());
         }
 
         return errorMessages;
     }
+
+
+
 
     /**
      * Get the restaurant ID for a user by username.

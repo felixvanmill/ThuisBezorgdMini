@@ -179,7 +179,7 @@ public class DeliveryService {
      * @param order The order to validate.
      * @throws RuntimeException if the order is not assigned to the logged-in delivery person.
      */
-    private void validateDeliveryPerson(CustomerOrder order) {
+    protected void validateDeliveryPerson(CustomerOrder order) {
         if (!getAuthenticatedUsername().equals(order.getDeliveryPerson())) {
             throw new RuntimeException("Unauthorized: You are not assigned to this order.");
         }
