@@ -1,10 +1,12 @@
-// src/main/java/com/service/OrderService.java
-
 package com.service;
 
 import com.model.CustomerOrder;
 import com.model.OrderStatus;
+import com.model.MenuItem;
+import com.model.Address;
 import com.repository.CustomerOrderRepository;
+import com.repository.MenuItemRepository;
+import com.repository.AddressRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,8 +19,16 @@ public class OrderService {
     @Autowired
     private CustomerOrderRepository orderRepository;
 
+    @Autowired
+    private MenuItemRepository menuItemRepository;
+
+    @Autowired
+    private AddressRepository addressRepository;
+
     /**
      * Get all orders.
+     *
+     * @return List of all customer orders.
      */
     @Transactional(readOnly = true)
     public List<CustomerOrder> getAllOrders() {
@@ -26,16 +36,22 @@ public class OrderService {
     }
 
     /**
-     * Get an order by ID.
+     * Get an order by ID using explicit repository method.
+     *
+     * @param id The ID of the order.
+     * @return The order if found.
      */
     @Transactional(readOnly = true)
     public CustomerOrder getOrderById(Long id) {
-        return orderRepository.findByIdWithDetails(id)
+        return orderRepository.findCustomerOrderById(id)  // ✅ Aangepast naar expliciete methode
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + id));
     }
 
     /**
      * Get an order by order number.
+     *
+     * @param orderNumber The order number.
+     * @return The order if found.
      */
     @Transactional(readOnly = true)
     public CustomerOrder getOrderByOrderNumber(String orderNumber) {
@@ -45,6 +61,9 @@ public class OrderService {
 
     /**
      * Add a new order.
+     *
+     * @param order The order to add.
+     * @return The saved order.
      */
     public CustomerOrder addOrder(CustomerOrder order) {
         return orderRepository.save(order);
@@ -52,6 +71,10 @@ public class OrderService {
 
     /**
      * Update the status of an order.
+     *
+     * @param id     The ID of the order.
+     * @param status The new status.
+     * @return The updated order.
      */
     public CustomerOrder updateOrderStatus(Long id, String status) {
         CustomerOrder order = getOrderById(id);
@@ -65,15 +88,20 @@ public class OrderService {
     }
 
     /**
-     * Delete an order by ID.
+     * Delete an order by ID using explicit repository method.
+     *
+     * @param id The ID of the order.
      */
     public void deleteOrder(Long id) {
-        CustomerOrder order = getOrderById(id);
+        CustomerOrder order = getOrderById(id);  // ✅ Aangepast naar expliciete methode
         orderRepository.delete(order);
     }
 
     /**
      * Get orders by status.
+     *
+     * @param status The order status.
+     * @return List of orders matching the status.
      */
     @Transactional(readOnly = true)
     public List<CustomerOrder> getOrdersByStatus(OrderStatus status) {
@@ -82,6 +110,9 @@ public class OrderService {
 
     /**
      * Get orders for a specific customer by username.
+     *
+     * @param username The customer's username.
+     * @return List of orders belonging to the customer.
      */
     @Transactional(readOnly = true)
     public List<CustomerOrder> getOrdersForCustomer(String username) {
@@ -90,6 +121,10 @@ public class OrderService {
 
     /**
      * Get a specific order for a customer by order number.
+     *
+     * @param username    The customer's username.
+     * @param orderNumber The order number.
+     * @return The order if found.
      */
     @Transactional(readOnly = true)
     public CustomerOrder getOrderForCustomerByOrderNumber(String username, String orderNumber) {
@@ -99,8 +134,35 @@ public class OrderService {
 
     /**
      * Save or update an order.
+     *
+     * @param order The order to save or update.
+     * @return The saved order.
      */
     public CustomerOrder saveOrder(CustomerOrder order) {
         return orderRepository.save(order);
+    }
+
+    /**
+     * Fetch a menu item by its ID using the explicit repository method.
+     *
+     * @param itemId The ID of the menu item.
+     * @return The menu item if found.
+     */
+    @Transactional(readOnly = true)
+    public MenuItem getMenuItemById(Long itemId) {
+        return menuItemRepository.findMenuItemById(itemId)
+                .orElseThrow(() -> new RuntimeException("Menu item not found with ID: " + itemId));
+    }
+
+    /**
+     * Fetch an address by its ID using the explicit repository method.
+     *
+     * @param addressId The ID of the address.
+     * @return The address if found.
+     */
+    @Transactional(readOnly = true)
+    public Address getAddressById(Long addressId) {
+        return addressRepository.findAddressById(addressId)
+                .orElseThrow(() -> new RuntimeException("Address not found with ID: " + addressId));
     }
 }

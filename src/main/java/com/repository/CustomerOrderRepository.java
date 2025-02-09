@@ -150,4 +150,14 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     """)
     Optional<CustomerOrder> findByOrderNumberWithItems(@Param("orderNumber") String orderNumber);
 
+    /**
+     * Explicit method to fetch an order by its ID.
+     *
+     * @param id The ID of the order.
+     * @return The order if found.
+     */
+    @Query("SELECT o FROM CustomerOrder o WHERE o.id = :id")
+    Optional<CustomerOrder> findCustomerOrderById(@Param("id") Long id);
+
+
 }

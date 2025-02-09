@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Repository for managing MenuItem entities.
@@ -50,4 +51,12 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
      * @return List of available or unavailable menu items based on the parameter.
      */
     List<MenuItem> findByRestaurant_IdAndIsAvailable(Long restaurantId, boolean isAvailable);
+
+    /**
+     * Alias method for findById to make it explicitly visible in the repository.
+     *
+     * @param id The ID of the menu item.
+     * @return The menu item, if found.
+     */
+    Optional<MenuItem> findMenuItemById(Long id);
 }
