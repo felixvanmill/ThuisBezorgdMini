@@ -1,18 +1,22 @@
 package com.controller;
 
+import com.security.JwtTokenUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.env.Environment;
 import org.springframework.http.*;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@TestPropertySource(locations = "classpath:application-test.properties")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class MenuItemControllerIT {
+class MenuItemControllerTest {
 
     @LocalServerPort
     private int port;
@@ -20,52 +24,34 @@ class MenuItemControllerIT {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private Environment env;
+
+    @Autowired
+    private JwtTokenUtil jwtTokenUtil;
+
     private String baseUrl;
-    private String sessionId;
+    private String token;
 
     @BeforeEach
     void setup() {
         baseUrl = "http://localhost:" + port;
-
-        // Add PATCH support for RestTemplate (since PATCH is not supported by default)
         restTemplate.getRestTemplate().setRequestFactory(new HttpComponentsClientHttpRequestFactory());
 
-        // Prepare form data for login
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-
-        // Form data payload (hardcoded credentials, should be replaced with test config)
-        String loginPayload = "username=marysmith&password=password123";
-
-        // Make the login request
-        HttpEntity<String> request = new HttpEntity<>(loginPayload, headers);
-        ResponseEntity<String> response = restTemplate.postForEntity(baseUrl + "/auth/login", request, String.class);
-
-        // Ensure login is successful
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-
-        // Extract the JSESSIONID from the Set-Cookie header
-        String setCookieHeader = response.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
-        assertNotNull(setCookieHeader, "Set-Cookie header is missing");
-
-        // Extract JSESSIONID from cookie (might fail if cookie format changes)
-        sessionId = setCookieHeader.split(";")[0]; // Example: JSESSIONID=abc123
-        assertTrue(sessionId.startsWith("JSESSIONID="), "JSESSIONID is not present in the cookie");
+        // Generate a valid JWT token for a restaurant employee
+        token = jwtTokenUtil.generateToken("restaurantEmployee", "ROLE_RESTAURANT_EMPLOYEE");
     }
 
     @Test
     void testUpdateMenuItemAvailability() {
         final Long itemId = 1L;
 
-        // Prepare headers with JSESSIONID for authentication
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set(HttpHeaders.COOKIE, sessionId); // Add the session cookie
+        headers.setBearerAuth(token); // Use valid JWT
 
-        // Create the request payload (JSON body)
         HttpEntity<String> request = new HttpEntity<>("{\"isAvailable\": false}", headers);
 
-        // Send the PATCH request to update menu item availability
         ResponseEntity<String> response = restTemplate.exchange(
                 baseUrl + "/restaurant/menu/items/" + itemId + "/availability",
                 HttpMethod.PATCH,
@@ -73,7 +59,6 @@ class MenuItemControllerIT {
                 String.class
         );
 
-        // Assertions to verify the response is as expected
         assertEquals(HttpStatus.OK, response.getStatusCode(), "Expected HTTP 200 OK");
         assertNotNull(response.getBody(), "Response body should not be null");
         assertTrue(response.getBody().contains("Menu item availability updated successfully"),
