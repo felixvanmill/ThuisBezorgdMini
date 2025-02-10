@@ -37,8 +37,9 @@ INSERT INTO customer_order (user_id, address_id, status, total_price, restaurant
 VALUES
     (1, 1, 'READY_FOR_DELIVERY', 31.97, 1, 'ORDER001', NULL),
     (1, 2, 'DELIVERED', 47.95, 2, 'ORDER002', 'alexjohnson'),
-    -- New test order for delivery person functionality
-    (1, 1, 'READY_FOR_DELIVERY', 25.98, 1, 'ORDER003', NULL)
+    (1, 1, 'READY_FOR_DELIVERY', 25.98, 1, 'ORDER003', NULL),
+    -- Adding new order ORDER005 as unconfirmed linked to restaurant 1
+    (1, 1, 'UNCONFIRMED', 27.98, 1, 'ORDER005', NULL)
 ON CONFLICT DO NOTHING;
 
 -- Insert data into order_items
@@ -48,7 +49,9 @@ VALUES
     (1, 2, 1, 'ORDER001'),
     (2, 3, 3, 'ORDER002'),
     (2, 4, 2, 'ORDER002'),
-    -- Items for the new test order
     (3, 1, 1, 'ORDER003'),
-    (3, 2, 1, 'ORDER003')
+    (3, 2, 1, 'ORDER003'),
+    -- Items for the new order ORDER005
+    (4, 1, 2, 'ORDER005'),
+    (4, 2, 1, 'ORDER005')
 ON CONFLICT DO NOTHING;
