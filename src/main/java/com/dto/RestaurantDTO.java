@@ -3,6 +3,7 @@ package com.dto;
 import com.model.Restaurant;
 import com.model.MenuItem;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -28,11 +29,11 @@ public class RestaurantDTO {
         }
         this.name = restaurant.getName();
         this.slug = restaurant.getSlug();
-        this.menuItems = menuItems.stream()
-                .filter(item -> item != null) // Ensure no null MenuItem objects
-                .map(menuItem -> new MenuItemDTO(menuItem, includeInventory))
-                .collect(Collectors.toList());
+        this.menuItems = (menuItems != null)
+                ? menuItems.stream().map(menuItem -> new MenuItemDTO(menuItem, includeInventory)).toList()
+                : new ArrayList<>(); //
     }
+
 
     // Getters
     public String getName() {

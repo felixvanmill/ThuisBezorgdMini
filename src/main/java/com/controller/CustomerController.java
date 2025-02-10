@@ -1,11 +1,14 @@
 package com.controller;
 
+import com.dto.CustomerOrderDTO;
 import com.dto.RestaurantDTO;
 import com.model.CustomerOrder;
+import com.model.Restaurant;
 import com.service.CustomerService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -63,9 +66,10 @@ public class CustomerController {
      * @return A response containing order status details.
      */
     @GetMapping("/track-order/{orderId}")
-    public ResponseEntity<?> trackOrder(@PathVariable String orderId) {
+    public ResponseEntity<CustomerOrderDTO> trackOrder(@PathVariable String orderId) {
         return ResponseEntity.ok(customerService.trackOrder(orderId));
     }
+
 
     /**
      * Cancels an order if it is still in an unconfirmed state.
@@ -78,4 +82,15 @@ public class CustomerController {
         customerService.cancelOrder(orderNumber);
         return ResponseEntity.ok(Map.of("message", "Order successfully canceled."));
     }
+
+    /**
+     * Retrieves a list of all available restaurants.
+     *
+     * @return ResponseEntity containing a list of Restaurant objects.
+     */
+    @GetMapping("/restaurants")
+    public ResponseEntity<List<RestaurantDTO>> getAllRestaurants() {
+        return ResponseEntity.ok(customerService.getAllRestaurants());
+    }
+
 }

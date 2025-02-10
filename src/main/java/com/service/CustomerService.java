@@ -1,5 +1,8 @@
 package com.service;
 
+import com.dto.CustomerOrderDTO;
+import com.dto.MenuItemDTO;
+import com.dto.RestaurantDTO;
 import com.model.*;
 import com.repository.AppUserRepository;
 import com.repository.CustomerOrderRepository;
@@ -52,11 +55,17 @@ public class CustomerService {
      * @return A list of menu items available at the restaurant.
      * @throws RuntimeException if the restaurant is not found.
      */
-    public List<MenuItem> getMenuByRestaurantSlug(String slug) {
-        return restaurantRepository.findBySlug(slug)
-                .map(Restaurant::getMenuItems)
+
+    public List<MenuItemDTO> getMenuByRestaurantSlug(String slug) {
+        Restaurant restaurant = restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+
+        // Convert to DTO with the fetched menuItems
+        return restaurant.getMenuItems().stream()
+                .map(menuItem -> new MenuItemDTO(menuItem, false))
+                .toList();
     }
+
 
     /**
      * Submits a new order for a given restaurant.
@@ -111,11 +120,20 @@ public class CustomerService {
      * @return The corresponding customer order.
      * @throws RuntimeException if the order is not found or the user lacks permission.
      */
-    public CustomerOrder trackOrder(String orderId) {
+    public CustomerOrderDTO trackOrder(String orderId) {
         String username = getAuthenticatedUsername();
-        return customerOrderRepository.findByOrderNumberAndUser_Username(orderId, username)
+        CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderId, username)
                 .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
+
+        // Ensure the user is loaded before DTO conversion
+        String customerName = order.getUser().getUsername(); // This forces Hibernate to fetch the user entity
+
+        return new CustomerOrderDTO(order);
     }
+
+
+
+
 
     /**
      * Cancels an order if it is still in the "UNCONFIRMED" status.
@@ -156,4 +174,22 @@ public class CustomerService {
         return appUserRepository.findByUsername(getAuthenticatedUsername())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
     }
+
+    /**
+     * Retrieves all restaurants from the database.
+     *
+     * @return List of all available restaurants.
+     */
+    public List<RestaurantDTO> getAllRestaurants() {
+        List<Restaurant> restaurants = restaurantRepository.findAll();
+
+        return restaurants.stream()
+                .map(restaurant -> new RestaurantDTO(
+                        restaurant,
+                        restaurant.getMenuItems() != null ? new ArrayList<>(restaurant.getMenuItems()) : new ArrayList<>(),
+                        false
+                ))
+                .toList();
+    }
+
 }

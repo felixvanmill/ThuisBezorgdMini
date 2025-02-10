@@ -7,6 +7,7 @@ import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -61,4 +62,9 @@ public interface RestaurantRepository extends JpaRepository<Restaurant, Long> {
      */
     @Query("SELECT r FROM Restaurant r LEFT JOIN FETCH r.employees WHERE r.slug = :slug")
     Optional<Restaurant> findBySlugWithEmployees(@Param("slug") String slug);
+
+    @Query("SELECT r FROM Restaurant r LEFT JOIN FETCH r.menuItems")
+    List<Restaurant> findAll();
+
+
 }

@@ -74,8 +74,9 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     /**
      * Fetch a specific order by its order number and username, with detailed associations.
      */
-    @EntityGraph(attributePaths = {"orderItems", "restaurant", "address"})
+    @EntityGraph(attributePaths = {"user", "orderItems", "restaurant", "address"})
     Optional<CustomerOrder> findByOrderNumberAndUser_Username(String orderNumber, String username);
+
 
     /**
      * Fetch orders assigned to a delivery person with specified statuses.
