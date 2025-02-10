@@ -14,19 +14,21 @@ public class CustomerOrderDTO {
     private double totalPrice;
     private String status;
     private String restaurantName;
+    private String customerName;
 
     // Default constructor
     public CustomerOrderDTO() {
     }
 
-    // Initialize from a CustomerOrder entity
     public CustomerOrderDTO(CustomerOrder order) {
         this.id = order.getId();
         this.orderNumber = order.getOrderNumber();
         this.totalPrice = order.getTotalPrice();
         this.status = order.getStatus().name();
         this.restaurantName = (order.getRestaurant() != null) ? order.getRestaurant().getName() : null;
+        this.customerName = (order.getUser() != null) ? order.getUser().getUsername() : "Unknown";
     }
+
 
     // Getters and setters
     public Long getId() {

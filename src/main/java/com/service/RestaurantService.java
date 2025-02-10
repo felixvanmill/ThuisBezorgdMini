@@ -84,7 +84,7 @@ public class RestaurantService {
         List<MenuItem> menuItems = includeInventory
                 ? menuItemRepository.findByRestaurant_Id(restaurant.getId())
                 : menuItemRepository.findByRestaurant_IdAndIsAvailable(restaurant.getId(), true);
-
+        System.out.println("Fetched Menu Items in Service: " + menuItems.size());
         return new RestaurantDTO(restaurant, menuItems, includeInventory);
     }
 

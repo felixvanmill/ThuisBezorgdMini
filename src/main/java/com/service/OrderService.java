@@ -7,23 +7,35 @@ import com.model.Address;
 import com.repository.CustomerOrderRepository;
 import com.repository.MenuItemRepository;
 import com.repository.AddressRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+/**
+ * Service class for managing orders and related entities.
+ */
 @Service
 public class OrderService {
 
-    @Autowired
-    private CustomerOrderRepository orderRepository;
+    private final CustomerOrderRepository orderRepository;
+    private final MenuItemRepository menuItemRepository;
+    private final AddressRepository addressRepository;
 
-    @Autowired
-    private MenuItemRepository menuItemRepository;
-
-    @Autowired
-    private AddressRepository addressRepository;
+    /**
+     * Constructor-based Dependency Injection.
+     *
+     * @param orderRepository    The repository for customer orders.
+     * @param menuItemRepository The repository for menu items.
+     * @param addressRepository  The repository for addresses.
+     */
+    public OrderService(CustomerOrderRepository orderRepository,
+                        MenuItemRepository menuItemRepository,
+                        AddressRepository addressRepository) {
+        this.orderRepository = orderRepository;
+        this.menuItemRepository = menuItemRepository;
+        this.addressRepository = addressRepository;
+    }
 
     /**
      * Get all orders.
@@ -43,7 +55,7 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public CustomerOrder getOrderById(Long id) {
-        return orderRepository.findCustomerOrderById(id)  // ✅ Aangepast naar expliciete methode
+        return orderRepository.findCustomerOrderById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found with ID: " + id));
     }
 
@@ -93,7 +105,7 @@ public class OrderService {
      * @param id The ID of the order.
      */
     public void deleteOrder(Long id) {
-        CustomerOrder order = getOrderById(id);  // ✅ Aangepast naar expliciete methode
+        CustomerOrder order = getOrderById(id);
         orderRepository.delete(order);
     }
 

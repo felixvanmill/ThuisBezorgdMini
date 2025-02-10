@@ -5,6 +5,8 @@ import jakarta.persistence.*;
 /**
  * Represents an application user with roles and optional associations to a restaurant and address.
  */
+
+
 @Entity
 @Table(name = "app_users")
 public class AppUser {

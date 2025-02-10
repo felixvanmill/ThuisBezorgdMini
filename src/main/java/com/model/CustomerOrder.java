@@ -138,4 +138,15 @@ public class CustomerOrder {
     public AppUser getCustomer() {
         return user;
     }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public void setOrderNumber(String orderNumber) {
+        this.orderNumber = orderNumber;
+    }
+
+
+
 }
