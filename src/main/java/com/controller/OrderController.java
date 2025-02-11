@@ -108,22 +108,19 @@ public class OrderController {
                     ? orderService.getOrderById(Long.parseLong(identifier))
                     : orderService.getOrderByOrderNumber(identifier);
 
-            String loggedInUser = getAuthenticatedUsername();
-            if (!restaurantService.isEmployeeAuthorizedForRestaurant(loggedInUser, order.getRestaurant().getSlug())) {
-                return ResponseEntity.status(403).body(Map.of("error", "Access denied: Order does not belong to your restaurant."));
-            }
-
             return ResponseEntity.ok(new CustomerOrderDTO(order));
+
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
         }
     }
 
+
     /**
      * Updates the status of an order for a specific restaurant.
      */
-    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @PostMapping("/restaurant/{slug}/{orderId}/updateStatus")
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable String slug,
             @PathVariable String orderId, // Can handle alphanumeric IDs
@@ -131,7 +128,9 @@ public class OrderController {
         try {
             CustomerOrder order = orderId.matches("\\d+")
                     ? orderService.getOrderById(Long.parseLong(orderId))
-                    : orderService.getOrderByOrderNumber(orderId);
+                    : orderService.getOrderByOrderNumber(orderId); // 🚨 Wrong return type here
+
+
 
             if (!order.getRestaurant().getSlug().equals(slug)) {
                 return ResponseEntity.badRequest().body(Map.of("error", "Order does not belong to this restaurant."));
@@ -148,6 +147,7 @@ public class OrderController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
 
     /**
      * Fetches orders based on their status.

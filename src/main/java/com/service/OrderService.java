@@ -1,5 +1,6 @@
 package com.service;
 
+import com.dto.CustomerOrderDTO;
 import com.model.CustomerOrder;
 import com.model.OrderStatus;
 import com.model.MenuItem;
@@ -67,9 +68,12 @@ public class OrderService {
      */
     @Transactional(readOnly = true)
     public CustomerOrder getOrderByOrderNumber(String orderNumber) {
-        return orderRepository.findByOrderNumber(orderNumber)
+        return orderRepository.findByOrderNumberWithDetails(orderNumber)
                 .orElseThrow(() -> new RuntimeException("Order not found with order number: " + orderNumber));
     }
+
+
+
 
     /**
      * Add a new order.

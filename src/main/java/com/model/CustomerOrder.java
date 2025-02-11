@@ -52,6 +52,8 @@ public class CustomerOrder {
         this.orderNumber = generateOrderNumber();
     }
 
+
+
     // Constructor with fields
     public CustomerOrder(AppUser user, List<OrderItem> orderItems, Address address, OrderStatus status, double totalPrice, Restaurant restaurant) {
         this.orderNumber = generateOrderNumber();
