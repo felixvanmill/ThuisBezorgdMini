@@ -1,5 +1,6 @@
 package com.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 
 /**
@@ -9,6 +10,7 @@ import jakarta.persistence.*;
 
 @Entity
 @Table(name = "app_users")
+@JsonIgnoreProperties({"password"})
 public class AppUser {
 
     @Id
@@ -31,8 +33,8 @@ public class AppUser {
     @JoinColumn(name = "restaurant_id") // Link to a restaurant (optional)
     private Restaurant restaurant;
 
-    @OneToOne
-    @JoinColumn(name = "address_id", unique = true, nullable = false) // Links to an adress.
+    @OneToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "address_id", unique = true, nullable = false)
     private Address address;
 
 

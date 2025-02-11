@@ -113,9 +113,20 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     /**
      * Fetch a specific order by order number with detailed associations.
      */
-    @EntityGraph(attributePaths = {"user", "orderItems.menuItem", "restaurant", "address"})
-    @Query("SELECT o FROM CustomerOrder o WHERE o.orderNumber = :orderNumber")
+    @Query("""
+    SELECT o FROM CustomerOrder o
+    LEFT JOIN FETCH o.user u
+    LEFT JOIN FETCH u.address
+    LEFT JOIN FETCH o.restaurant r
+    LEFT JOIN FETCH o.address a
+    LEFT JOIN FETCH o.orderItems oi
+    LEFT JOIN FETCH oi.menuItem
+    WHERE o.orderNumber = :orderNumber
+""")
     Optional<CustomerOrder> findByOrderNumberWithDetails(@Param("orderNumber") String orderNumber);
+
+
+
 
     /**
      * Fetch a specific order by ID and username, with detailed associations.

@@ -126,9 +126,10 @@ public class DeliveryController {
      * @param identifier The order ID or order number.
      * @return A response containing detailed order information.
      */
-    @GetMapping("/orders/{identifier}/details")
-    public ResponseEntity<?> getOrderDetails(@PathVariable String identifier) {
-        CustomerOrder order = deliveryService.getOrderDetails(identifier);
+    @GetMapping("/orders/{orderNumber}/details")
+    public ResponseEntity<CustomerOrderDTO> getOrderDetails(@PathVariable String orderNumber) {
+        CustomerOrderDTO order = deliveryService.getOrderDetails(orderNumber);
         return ResponseEntity.ok(order);
     }
+
 }

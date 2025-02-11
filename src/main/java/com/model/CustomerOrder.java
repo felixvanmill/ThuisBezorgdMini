@@ -24,7 +24,7 @@ public class CustomerOrder {
     @JoinColumn(name = "user_id", nullable = false) // Link to the customer
     private AppUser user;
 
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "customer_order_id") // Link items to the order
     @JsonIgnore
     private List<OrderItem> orderItems;

@@ -154,16 +154,24 @@ class DeliveryServiceTest {
     @Test
     void testFindOrderByIdentifier_ValidNumericOrderID() {
         when(customerOrderRepository.findById(100L)).thenReturn(Optional.of(order));
-        CustomerOrder result = deliveryService.getOrderDetails("100");
+
+        CustomerOrderDTO result = deliveryService.getOrderDetails("100"); // ✅ Expect DTO
         assertNotNull(result);
+        assertEquals(order.getOrderNumber(), result.getOrderNumber());
     }
+
 
     @Test
     void testFindOrderByIdentifier_ValidOrderNumber() {
-        when(customerOrderRepository.findByOrderNumber("ORDER456")).thenReturn(Optional.of(order));
-        CustomerOrder result = deliveryService.getOrderDetails("ORDER456");
+        when(customerOrderRepository.findByOrderNumber(anyString()))
+                .thenReturn(Optional.of(order)); //
+
+
+        CustomerOrderDTO result = deliveryService.getOrderDetails("ORDER456"); // ✅ Expect DTO
         assertNotNull(result);
+        assertEquals(order.getOrderNumber(), result.getOrderNumber());
     }
+
 
     @Test
     void testGetAssignedOrders() {

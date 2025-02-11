@@ -149,11 +149,14 @@ public class DeliveryService {
      * @return The order details.
      * @throws RuntimeException if the order is not assigned to the logged-in delivery person.
      */
-    public CustomerOrder getOrderDetails(String identifier) {
+    @Transactional(readOnly = true)
+    public CustomerOrderDTO getOrderDetails(String identifier) {
         CustomerOrder order = findOrderByIdentifier(identifier);
         validateDeliveryPerson(order);
-        return order;
+
+        return new CustomerOrderDTO(order);
     }
+
 
     /**
      * Finds an order by its ID or order number.

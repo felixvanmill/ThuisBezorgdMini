@@ -15,6 +15,7 @@ public class CustomerOrderDTO {
     private String status;
     private String restaurantName;
     private String customerName;
+    private String customerAddress; // ✅ Add this field
 
     // Default constructor
     public CustomerOrderDTO() {
@@ -26,8 +27,13 @@ public class CustomerOrderDTO {
         this.totalPrice = order.getTotalPrice();
         this.status = order.getStatus().name();
         this.restaurantName = (order.getRestaurant() != null) ? order.getRestaurant().getName() : null;
-        this.customerName = (order.getUser() != null) ? order.getUser().getUsername() : "Unknown";
+
+        this.customerName = (order.getUser() != null) ? order.getUser().getFullName() : "Unknown";
+        this.customerAddress = (order.getUser() != null && order.getUser().getAddress() != null)
+                ? order.getUser().getAddress().getFullAddress() : "No address available";
+
     }
+
 
 
     // Getters and setters
@@ -69,5 +75,13 @@ public class CustomerOrderDTO {
 
     public void setRestaurantName(String restaurantName) {
         this.restaurantName = restaurantName;
+    }
+
+    public String getCustomerName() {
+        return customerName;
+    }
+
+    public String getCustomerAddress() {
+        return customerAddress;
     }
 }
