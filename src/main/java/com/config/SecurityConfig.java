@@ -1,12 +1,14 @@
 package com.config;
 
 import com.security.JwtAuthorizationFilter;
-import com.service.CustomUserDetailsService;
 import com.service.TokenBlacklistService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,32 +17,31 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 /**
- * Configures security settings including authentication and JWT protection.
+ * Configures security settings, enforcing JWT authentication and removing form-login.
  */
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
-    private final CustomUserDetailsService userDetailsService;
-    private final TokenBlacklistService tokenBlacklistService;
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService,
-                          TokenBlacklistService tokenBlacklistService,
-                          JwtAuthorizationFilter jwtAuthorizationFilter) {
-        this.userDetailsService = userDetailsService;
-        this.tokenBlacklistService = tokenBlacklistService;
+    public SecurityConfig(JwtAuthorizationFilter jwtAuthorizationFilter,
+                          TokenBlacklistService tokenBlacklistService) {
         this.jwtAuthorizationFilter = jwtAuthorizationFilter;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // CSRF disabled for stateless JWT authentication
-                .sessionManagement(session -> session.disable()) // Completely remove session-based authentication
+                .csrf(csrf -> csrf.disable()) // Disable CSRF since we're using JWT
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Enforce stateless authentication
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/login", "/auth/register", "/error").permitAll()
                         .requestMatchers("/customer/**").hasRole("CUSTOMER")
                         .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE")
+                        .requestMatchers("/api/users/**").hasRole("ADMIN") // Restrict user management to admins
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
