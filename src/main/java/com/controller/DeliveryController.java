@@ -4,6 +4,7 @@ import com.dto.CustomerOrderDTO;
 import com.model.CustomerOrder;
 import com.service.DeliveryService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -59,6 +60,7 @@ public class DeliveryController {
      * @param identifier The order ID or order number.
      * @return A response confirming that the order is now in PICKING_UP status.
      */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @PostMapping("/orders/{identifier}/confirmPickup")
     public ResponseEntity<?> confirmPickup(@PathVariable String identifier) {
         CustomerOrder order = deliveryService.confirmPickup(identifier);
@@ -74,6 +76,7 @@ public class DeliveryController {
      * @param identifier The order ID or order number.
      * @return A response confirming that the order has been marked as DELIVERED.
      */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @PostMapping("/orders/{identifier}/confirmDelivery")
     public ResponseEntity<?> confirmDelivery(@PathVariable String identifier) {
         CustomerOrder order = deliveryService.confirmDelivery(identifier);

@@ -28,13 +28,14 @@ public class JwtTokenUtil {
      */
     public String generateToken(String username, String role) {
         return Jwts.builder()
-                .setSubject(username) // Set the username as the token subject
-                .claim("role", role)  // Add the user's role as a claim
-                .setIssuedAt(new Date()) // Set the issue date
-                .setExpiration(new Date(System.currentTimeMillis() + expirationTime)) // Set the expiration date
-                .signWith(SignatureAlgorithm.HS256, secretKey) // Sign the token with the secret key
+                .setSubject(username)
+                .claim("role", "ROLE_" + role)  // Ensure correct role format
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + expirationTime))
+                .signWith(SignatureAlgorithm.HS256, secretKey)
                 .compact();
     }
+
 
     /**
      * Validates the given JWT token.

@@ -1,12 +1,14 @@
 package com.config;
 
 import com.security.JwtAuthorizationFilter;
-import com.service.CustomUserDetailsService;
 import com.service.TokenBlacklistService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,125 +17,66 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 
 /**
- * Sets up security rules for the app, like login, logout, and protected routes.
+ * Configures security settings, enforcing JWT authentication and removing form-login.
  */
 @Configuration
+@EnableWebSecurity
 public class SecurityConfig {
 
-    private final CustomUserDetailsService userDetailsService;
-    private final TokenBlacklistService tokenBlacklistService;
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    /**
-     * Constructor to link necessary services.
-     */
-    public SecurityConfig(CustomUserDetailsService userDetailsService,
-                          TokenBlacklistService tokenBlacklistService,
-                          JwtAuthorizationFilter jwtAuthorizationFilter) {
-        this.userDetailsService = userDetailsService;
-        this.tokenBlacklistService = tokenBlacklistService;
+    public SecurityConfig(JwtAuthorizationFilter jwtAuthorizationFilter,
+                          TokenBlacklistService tokenBlacklistService) {
         this.jwtAuthorizationFilter = jwtAuthorizationFilter;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
-    /**
-     * Defines security rules for HTTP requests.
-     */
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                // Turn off CSRF protection (not needed for APIs)
-                .csrf(csrf -> csrf.disable())
-
-                // Define which endpoints are public or protected
+                .csrf(csrf -> csrf.disable()) // Disable CSRF since we're using JWT
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Enforce stateless authentication
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/auth/login", "/error").permitAll() // Public routes
-                        .requestMatchers("/customer/**").hasRole("CUSTOMER") // Only customers
-                        .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE") // Only restaurant employees
-                        .requestMatchers("/orders/customer/**").hasRole("CUSTOMER") // Orders for customers
-                        .requestMatchers("/orders/restaurant/**").hasRole("RESTAURANT_EMPLOYEE") // Orders for restaurants
-                        .anyRequest().authenticated() // Everything else needs login
+                        .requestMatchers("/auth/login", "/auth/register", "/error").permitAll()
+                        .requestMatchers("/customer/**").hasRole("CUSTOMER")
+                        .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE")
+                        .requestMatchers("/api/users/**").hasRole("ADMIN") // Restrict user management to admins
+                        .anyRequest().authenticated()
                 )
-
-                // Add the JWT filter to check tokens
                 .addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
-
-                // Handle login
-                .formLogin(form -> form
-                        .loginProcessingUrl("/auth/login") // Where the login request is sent
-                        .successHandler((request, response, authentication) -> {
-                            response.setContentType("application/json");
-                            response.setCharacterEncoding("UTF-8");
-                            response.getWriter().write("{\"message\": \"Login successful\", \"username\": \"" + authentication.getName() + "\"}");
-                        })
-                        .failureHandler((request, response, exception) -> {
-                            response.setContentType("application/json");
-                            response.setCharacterEncoding("UTF-8");
-                            response.setStatus(401);
-                            response.getWriter().write("{\"error\": \"Invalid credentials\"}");
-                        })
-                        .permitAll()
-                )
-
-                // Handle logout
                 .logout(logout -> logout
-                        .logoutUrl("/auth/logout") // Where the logout request is sent
-                        .addLogoutHandler(customLogoutHandler()) // Blacklist the token on logout
+                        .logoutUrl("/auth/logout")
+                        .addLogoutHandler(customLogoutHandler())
                         .logoutSuccessHandler((request, response, authentication) -> {
                             response.setContentType("application/json");
                             response.setCharacterEncoding("UTF-8");
-                            if (authentication == null || "anonymousUser".equals(authentication.getName())) {
-                                response.setStatus(400);
-                                response.getWriter().write("{\"message\": \"No user was logged in\"}");
-                            } else {
-                                String username = authentication.getName();
-                                response.getWriter().write("{\"message\": \"Logout successful\", \"user\": \"" + username + "\"}");
-                            }
-                        })
-                        .permitAll()
-                )
-
-                // Handle unauthorized access
-                .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((request, response, authException) -> {
-                            response.setContentType("application/json");
-                            response.setCharacterEncoding("UTF-8");
-                            response.setStatus(401);
-                            response.getWriter().write("{\"error\": \"Authentication required\"}");
+                            response.getWriter().write("{\"message\": \"Logout successful\"}");
                         })
                 );
 
         return http.build();
     }
 
-    /**
-     * Handles custom logic for logout (blacklisting tokens).
-     */
     @Bean
     public LogoutHandler customLogoutHandler() {
         return (request, response, authentication) -> {
             String tokenHeader = request.getHeader("Authorization");
             if (tokenHeader != null && tokenHeader.startsWith("Bearer ")) {
-                String token = tokenHeader.substring(7); // Remove "Bearer " from the header
-                tokenBlacklistService.blacklistToken(token); // Add the token to the blacklist
+                String token = tokenHeader.substring(7);
+                tokenBlacklistService.blacklistToken(token);
             }
         };
     }
 
-    /**
-     * Creates a password encoder to hash passwords.
-     */
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(); // BCrypt is secure for hashing passwords
+        return new BCryptPasswordEncoder();
     }
 
-    /**
-     * Configures authentication with user details and password encoder.
-     */
     @Bean
-    public AuthenticationManager authenticationManager(HttpSecurity http) throws Exception {
-        AuthenticationManagerBuilder authManagerBuilder = http.getSharedObject(AuthenticationManagerBuilder.class);
-        authManagerBuilder.userDetailsService(userDetailsService).passwordEncoder(passwordEncoder());
-        return authManagerBuilder.build();
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration)
+            throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 }

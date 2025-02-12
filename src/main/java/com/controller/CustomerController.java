@@ -5,6 +5,7 @@ import com.dto.RestaurantDTO;
 import com.model.CustomerOrder;
 import com.service.CustomerService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -47,6 +48,7 @@ public class CustomerController {
      * @param menuItemQuantities A map containing menu item IDs as keys and their quantities as values.
      * @return A response with the order details.
      */
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     @PostMapping("/restaurant/{slug}/order")
     public ResponseEntity<Map<String, Object>> submitOrder(
             @PathVariable String slug,
@@ -62,6 +64,7 @@ public class CustomerController {
      * @param orderId The unique order ID.
      * @return A response containing order status details.
      */
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     @GetMapping("/track-order/{orderId}")
     public ResponseEntity<CustomerOrderDTO> trackOrder(@PathVariable String orderId) {
         return ResponseEntity.ok(customerService.trackOrder(orderId));
@@ -73,6 +76,7 @@ public class CustomerController {
      * @param orderNumber The unique order number.
      * @return A response confirming the order cancellation.
      */
+    @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     @PostMapping("/orders/{orderNumber}/cancel")
     public ResponseEntity<Map<String, String>> cancelOrder(@PathVariable String orderNumber) {
         customerService.cancelOrder(orderNumber);
