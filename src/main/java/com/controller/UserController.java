@@ -126,34 +126,6 @@ public class UserController {
         }
     }
 
-    /**
-     * Authenticate a user and generate a JWT token.
-     *
-     * @param authenticationRequest User credentials.
-     * @return JWT token or error response.
-     */
-    @PostMapping("/login")
-    public ResponseEntity<?> createAuthenticationToken(@RequestBody @Valid UserRegistrationDTO authenticationRequest) {
-        try {
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            authenticationRequest.getUsername(),
-                            authenticationRequest.getPassword()
-                    )
-            );
-        } catch (AuthenticationException e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("error", "Incorrect username or password"));
-        }
-
-        Optional<AppUser> userOptional = userService.getUserByUsername(authenticationRequest.getUsername());
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Map.of("error", "User not found"));
-        }
-
-        AppUser user = userOptional.get();
-        String jwt = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().name());
-        return ResponseEntity.ok(new JwtResponse(jwt));
-    }
 
     /**
      * Fetch a user by their username.

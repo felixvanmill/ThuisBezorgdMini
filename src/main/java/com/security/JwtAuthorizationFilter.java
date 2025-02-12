@@ -40,27 +40,28 @@ public class JwtAuthorizationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {
-        // Get the token from the Authorization header
         String token = getJwtFromRequest(request);
 
         if (token != null) {
-            // If the token is blacklisted, block the request
             if (tokenBlacklistService.isTokenBlacklisted(token)) {
                 response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.getWriter().write("{\"error\": \"Token is blacklisted.\"}");
-                return; // Stop further processing
+                return;
             }
 
-            // If the token is valid, set the user as authenticated
-            if (jwtTokenUtil.validateToken(token)) {
-                Authentication auth = jwtTokenUtil.getAuthentication(token);
-                SecurityContextHolder.getContext().setAuthentication(auth);
+            if (!jwtTokenUtil.validateToken(token)) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.getWriter().write("{\"error\": \"Invalid or expired token.\"}");
+                return;
             }
+
+            Authentication auth = jwtTokenUtil.getAuthentication(token);
+            SecurityContextHolder.getContext().setAuthentication(auth);
         }
 
-        // Continue with the rest of the filter chain
         chain.doFilter(request, response);
     }
+
 
     /**
      * Extracts the token from the Authorization header.
