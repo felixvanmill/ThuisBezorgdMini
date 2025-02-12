@@ -3,7 +3,6 @@ package com.controller;
 import com.dto.CustomerOrderDTO;
 import com.dto.RestaurantDTO;
 import com.model.CustomerOrder;
-import com.model.Restaurant;
 import com.service.CustomerService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -37,7 +36,7 @@ public class CustomerController {
      * @return A response containing the restaurant's menu.
      */
     @GetMapping("/{slug}/menu")
-    public ResponseEntity<?> getMenuBySlug(@PathVariable String slug) {
+    public ResponseEntity<List<?>> getMenuBySlug(@PathVariable String slug) {
         return ResponseEntity.ok(customerService.getMenuByRestaurantSlug(slug));
     }
 
@@ -49,15 +48,13 @@ public class CustomerController {
      * @return A response with the order details.
      */
     @PostMapping("/restaurant/{slug}/order")
-    public ResponseEntity<?> submitOrder(@PathVariable String slug, @RequestBody Map<Long, Integer> menuItemQuantities) {
-        CustomerOrder order = customerService.submitOrder(slug, menuItemQuantities);
-        return ResponseEntity.ok(Map.of(
-                "orderNumber", order.getOrderNumber(),
-                "totalPrice", order.getTotalPrice(),
-                "restaurantName", order.getRestaurant().getName(),
-                "message", "Your order has been placed successfully!"
-        ));
+    public ResponseEntity<Map<String, Object>> submitOrder(
+            @PathVariable String slug,
+            @RequestBody Map<Long, Integer> menuItemQuantities) {
+
+        return ResponseEntity.ok(customerService.submitOrder(slug, menuItemQuantities)); // ✅ Correct return type
     }
+
 
     /**
      * Tracks the status of an existing order.
@@ -70,7 +67,6 @@ public class CustomerController {
         return ResponseEntity.ok(customerService.trackOrder(orderId));
     }
 
-
     /**
      * Cancels an order if it is still in an unconfirmed state.
      *
@@ -78,7 +74,7 @@ public class CustomerController {
      * @return A response confirming the order cancellation.
      */
     @PostMapping("/orders/{orderNumber}/cancel")
-    public ResponseEntity<?> cancelOrder(@PathVariable String orderNumber) {
+    public ResponseEntity<Map<String, String>> cancelOrder(@PathVariable String orderNumber) {
         customerService.cancelOrder(orderNumber);
         return ResponseEntity.ok(Map.of("message", "Order successfully canceled."));
     }
@@ -92,5 +88,4 @@ public class CustomerController {
     public ResponseEntity<List<RestaurantDTO>> getAllRestaurants() {
         return ResponseEntity.ok(customerService.getAllRestaurants());
     }
-
 }

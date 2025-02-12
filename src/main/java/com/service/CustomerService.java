@@ -31,14 +31,6 @@ public class CustomerService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    /**
-     * Constructor-based Dependency Injection for required repositories.
-     *
-     * @param customerOrderRepository The repository handling customer orders.
-     * @param menuItemRepository      The repository managing menu items.
-     * @param appUserRepository       The repository managing user authentication and details.
-     * @param restaurantRepository    The repository for retrieving restaurant details.
-     */
     public CustomerService(CustomerOrderRepository customerOrderRepository,
                            MenuItemRepository menuItemRepository,
                            AppUserRepository appUserRepository,
@@ -54,30 +46,25 @@ public class CustomerService {
      *
      * @param slug The restaurant's unique slug.
      * @return A list of menu items available at the restaurant.
-     * @throws RuntimeException if the restaurant is not found.
      */
-
     public List<MenuItemDTO> getMenuByRestaurantSlug(String slug) {
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
-        // Convert to DTO with the fetched menuItems
         return restaurant.getMenuItems().stream()
                 .map(menuItem -> new MenuItemDTO(menuItem, false))
                 .toList();
     }
 
-
     /**
-     * Submits a new order for a given restaurant.
+     * Places an order for a given restaurant.
      *
      * @param slug               The restaurant's unique slug.
      * @param menuItemQuantities A map containing menu item IDs and their respective quantities.
-     * @return The created customer order.
-     * @throws RuntimeException if the restaurant, menu items, or customer data is invalid.
+     * @return A Map containing order details.
      */
     @Transactional
-    public CustomerOrder submitOrder(String slug, Map<Long, Integer> menuItemQuantities) {
+    public Map<String, Object> submitOrder(String slug, Map<Long, Integer> menuItemQuantities) {
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
@@ -110,8 +97,14 @@ public class CustomerService {
         Address managedAddress = entityManager.merge(customer.getAddress());
         CustomerOrder order = new CustomerOrder(customer, orderItems, managedAddress, OrderStatus.UNCONFIRMED, totalPrice, restaurant);
         orderItems.forEach(item -> item.setOrderNumber(order.getOrderNumber()));
+        customerOrderRepository.save(order);
 
-        return customerOrderRepository.save(order);
+        return Map.of(
+                "orderNumber", order.getOrderNumber(),
+                "totalPrice", order.getTotalPrice(),
+                "restaurantName", order.getRestaurant().getName(),
+                "message", "Your order has been placed successfully!"
+        );
     }
 
     /**
@@ -119,7 +112,6 @@ public class CustomerService {
      *
      * @param orderId The unique order identifier.
      * @return The corresponding customer order.
-     * @throws RuntimeException if the order is not found or the user lacks permission.
      */
     @Transactional
     public CustomerOrderDTO trackOrder(String orderId) {
@@ -133,17 +125,14 @@ public class CustomerService {
         return new CustomerOrderDTO(order);
     }
 
-
-
-
     /**
      * Cancels an order if it is still in the "UNCONFIRMED" status.
      *
      * @param orderNumber The unique order number.
-     * @throws RuntimeException if the order is not found, unauthorized, or cannot be canceled.
+     * @return A confirmation message.
      */
     @Transactional
-    public void cancelOrder(String orderNumber) {
+    public Map<String, String> cancelOrder(String orderNumber) {
         String username = getAuthenticatedUsername();
         CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderNumber, username)
                 .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
@@ -154,6 +143,23 @@ public class CustomerService {
 
         order.setStatus(OrderStatus.CANCELED);
         customerOrderRepository.save(order);
+
+        return Map.of("message", "Order successfully canceled.");
+    }
+
+    /**
+     * Retrieves all restaurants from the database.
+     *
+     * @return List of all available restaurants.
+     */
+    public List<RestaurantDTO> getAllRestaurants() {
+        return restaurantRepository.findAll().stream()
+                .map(restaurant -> new RestaurantDTO(
+                        restaurant,
+                        restaurant.getMenuItems() != null ? new ArrayList<>(restaurant.getMenuItems()) : new ArrayList<>(),
+                        false
+                ))
+                .toList();
     }
 
     /**
@@ -169,28 +175,9 @@ public class CustomerService {
      * Retrieves the authenticated customer from the database.
      *
      * @return The authenticated AppUser entity.
-     * @throws RuntimeException if the user cannot be found.
      */
     private AppUser getAuthenticatedCustomer() {
         return appUserRepository.findByUsername(getAuthenticatedUsername())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
     }
-
-    /**
-     * Retrieves all restaurants from the database.
-     *
-     * @return List of all available restaurants.
-     */
-    public List<RestaurantDTO> getAllRestaurants() {
-        List<Restaurant> restaurants = restaurantRepository.findAll();
-
-        return restaurants.stream()
-                .map(restaurant -> new RestaurantDTO(
-                        restaurant,
-                        restaurant.getMenuItems() != null ? new ArrayList<>(restaurant.getMenuItems()) : new ArrayList<>(),
-                        false
-                ))
-                .toList();
-    }
-
 }
