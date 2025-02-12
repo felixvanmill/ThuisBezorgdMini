@@ -57,7 +57,7 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     /**
      * Fetch a specific order by its order number, including order items and restaurant.
      */
-    @EntityGraph(attributePaths = {"orderItems", "restaurant"})
+    @EntityGraph(attributePaths = {"orderItems", "restaurant", "address", "user", "user.address"})
     Optional<CustomerOrder> findByOrderNumber(String orderNumber);
 
     /**
@@ -68,14 +68,15 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     /**
      * Fetch orders for a specific user, including associated order items, restaurant, and address.
      */
-    @EntityGraph(attributePaths = {"orderItems", "restaurant", "address"})
+    @EntityGraph(attributePaths = {"user", "user.address", "restaurant", "orderItems.menuItem"})
     List<CustomerOrder> findByUser_Username(String username);
 
     /**
      * Fetch a specific order by its order number and username, with detailed associations.
      */
-    @EntityGraph(attributePaths = {"user", "orderItems", "restaurant", "address"})
+    @EntityGraph(attributePaths = {"user", "user.address", "orderItems", "restaurant", "address"})
     Optional<CustomerOrder> findByOrderNumberAndUser_Username(String orderNumber, String username);
+
 
 
     /**

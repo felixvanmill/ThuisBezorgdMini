@@ -10,6 +10,7 @@ import com.repository.MenuItemRepository;
 import com.repository.RestaurantRepository;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
+import org.hibernate.Hibernate;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -120,17 +121,17 @@ public class CustomerService {
      * @return The corresponding customer order.
      * @throws RuntimeException if the order is not found or the user lacks permission.
      */
+    @Transactional
     public CustomerOrderDTO trackOrder(String orderId) {
         String username = getAuthenticatedUsername();
         CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderId, username)
                 .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
 
-        // Ensure the user is loaded before DTO conversion
-        String customerName = order.getUser().getUsername(); // This forces Hibernate to fetch the user entity
+        Hibernate.initialize(order.getUser());
+        Hibernate.initialize(order.getUser().getAddress());
 
         return new CustomerOrderDTO(order);
     }
-
 
 
 
