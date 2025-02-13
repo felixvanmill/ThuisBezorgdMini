@@ -180,4 +180,22 @@ public class CustomerService {
         return appUserRepository.findByUsername(getAuthenticatedUsername())
                 .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
     }
+
+    /**
+     * Retrieves all orders for the authenticated customer.
+     *
+     * @return List of CustomerOrderDTOs representing the orders of the user.
+     */
+    @Transactional
+    public List<CustomerOrderDTO> getAllOrdersForAuthenticatedUser() {
+        String username = getAuthenticatedUsername(); // Get logged-in user's username
+
+        List<CustomerOrder> orders = customerOrderRepository.findByUser_Username(username);
+        if (orders.isEmpty()) {
+            throw new RuntimeException("No orders found for user: " + username);
+        }
+
+        return orders.stream().map(CustomerOrderDTO::new).toList();
+    }
+
 }
