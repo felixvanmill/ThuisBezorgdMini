@@ -1,6 +1,8 @@
 package com.controller;
 
 import com.dto.CustomerOrderDTO;
+import com.dto.MenuItemDTO;
+import com.dto.OrderDTO;
 import com.dto.RestaurantDTO;
 import com.service.CustomerService;
 import org.springframework.http.ResponseEntity;
@@ -48,12 +50,14 @@ public class CustomerController {
      */
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     @PostMapping("/restaurants/{slug}/orders")
-    public ResponseEntity<Map<String, Object>> submitOrder(
+    public ResponseEntity<OrderDTO> submitOrder(
             @PathVariable String slug,
-            @RequestBody Map<Long, Integer> menuItemQuantities) {
+            @RequestBody List<Map<String, Object>> orderItems) {
 
-        return ResponseEntity.ok(customerService.submitOrder(slug, menuItemQuantities));
+        return ResponseEntity.ok(customerService.submitOrder(slug, orderItems));
     }
+
+
 
     /**
      * Retrieves all orders for the authenticated customer.

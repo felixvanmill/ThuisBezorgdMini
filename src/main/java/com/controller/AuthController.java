@@ -38,7 +38,8 @@ public class AuthController {
     private PasswordEncoder passwordEncoder;
 
     /**
-     * Registers a new user.
+     * Registers a new user. This is not used yet so far in the application.
+     * Its a set-up to-be used in newer versions of the API
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody @Valid UserRegistrationDTO userRegistrationDTO) {
@@ -71,7 +72,6 @@ public class AuthController {
 
         AppUser user = userOptional.get();
 
-        // 🔥 Compare plaintext password with hashed password
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             return ResponseEntity.status(401).body("Incorrect username or password.");
         }

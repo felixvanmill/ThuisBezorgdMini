@@ -2,6 +2,7 @@ package com.service;
 
 import com.dto.CustomerOrderDTO;
 import com.dto.MenuItemDTO;
+import com.dto.OrderDTO;
 import com.dto.RestaurantDTO;
 import com.model.*;
 import com.repository.AppUserRepository;
@@ -64,7 +65,7 @@ public class CustomerService {
      * @return A Map containing order details.
      */
     @Transactional
-    public Map<String, Object> submitOrder(String slug, Map<Long, Integer> menuItemQuantities) {
+    public OrderDTO submitOrder(String slug, List<Map<String, Object>> orderItems) {
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
@@ -74,14 +75,17 @@ public class CustomerService {
             throw new RuntimeException("Customer address is required to place an order.");
         }
 
-        List<OrderItem> orderItems = new ArrayList<>();
+        List<OrderItem> createdOrderItems = new ArrayList<>();
         double totalPrice = 0;
+        StringBuilder itemsDescription = new StringBuilder(); // ✅ String to store ordered items
 
-        for (Map.Entry<Long, Integer> entry : menuItemQuantities.entrySet()) {
-            MenuItem menuItem = menuItemRepository.findById(entry.getKey())
-                    .orElseThrow(() -> new RuntimeException("Menu item not found with ID: " + entry.getKey()));
+        for (Map<String, Object> item : orderItems) {
+            Long menuItemId = ((Number) item.get("menuItemId")).longValue();
+            Integer quantity = ((Number) item.get("quantity")).intValue();
 
-            int quantity = entry.getValue();
+            MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                    .orElseThrow(() -> new RuntimeException("Menu item not found with ID: " + menuItemId));
+
             if (menuItem.getInventory() < quantity) {
                 throw new RuntimeException("Not enough stock for item: " + menuItem.getName());
             }
@@ -90,22 +94,36 @@ public class CustomerService {
             menuItemRepository.save(menuItem);
 
             OrderItem orderItem = new OrderItem(menuItem, quantity, null);
-            orderItems.add(orderItem);
+            createdOrderItems.add(orderItem);
             totalPrice += orderItem.getTotalPrice();
+
+            // ✅ Append item details to the description
+            itemsDescription.append(quantity)
+                    .append("x ")
+                    .append(menuItem.getName())
+                    .append(", ");
         }
 
         Address managedAddress = entityManager.merge(customer.getAddress());
-        CustomerOrder order = new CustomerOrder(customer, orderItems, managedAddress, OrderStatus.UNCONFIRMED, totalPrice, restaurant);
-        orderItems.forEach(item -> item.setOrderNumber(order.getOrderNumber()));
+        CustomerOrder order = new CustomerOrder(customer, createdOrderItems, managedAddress, OrderStatus.UNCONFIRMED, totalPrice, restaurant);
+        createdOrderItems.forEach(item -> item.setOrderNumber(order.getOrderNumber()));
         customerOrderRepository.save(order);
 
-        return Map.of(
-                "orderNumber", order.getOrderNumber(),
-                "totalPrice", order.getTotalPrice(),
-                "restaurantName", order.getRestaurant().getName(),
-                "message", "Your order has been placed successfully!"
+        // ✅ Remove the last comma and space if there are items
+        String itemsSummary = itemsDescription.length() > 0
+                ? itemsDescription.substring(0, itemsDescription.length() - 2)
+                : "No items";
+
+        return new OrderDTO(
+                order.getOrderNumber(),
+                order.getTotalPrice(),
+                order.getStatus(),
+                customer.getUsername(), // ✅ Username of the customer
+                itemsSummary // ✅ Now contains ordered items instead of null
         );
     }
+
+
 
     /**
      * Retrieves order details based on the order number.
