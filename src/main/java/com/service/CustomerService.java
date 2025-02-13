@@ -216,4 +216,35 @@ public class CustomerService {
         return orders.stream().map(CustomerOrderDTO::new).toList();
     }
 
+    /**
+     * Updates the status of an order (Customers can only cancel orders).
+     *
+     * @param orderNumber The unique order number.
+     * @param newStatus The requested status update (only "CANCELED" is allowed for customers).
+     * @return A confirmation message.
+     */
+    @Transactional
+    public Map<String, String> updateOrderStatus(String orderNumber, String newStatus) {
+        String username = getAuthenticatedUsername();
+
+        CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderNumber, username)
+                .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
+
+        // Ensure only "CANCELED" status can be set by customers
+        if (!newStatus.equalsIgnoreCase("CANCELED")) {
+            throw new RuntimeException("Customers can only cancel orders.");
+        }
+
+        // Prevent canceling orders that are already processed
+        if (order.getStatus() != OrderStatus.UNCONFIRMED) {
+            throw new RuntimeException("Order cannot be canceled in its current status.");
+        }
+
+        order.setStatus(OrderStatus.CANCELED);
+        customerOrderRepository.save(order);
+
+        return Map.of("message", "Order successfully canceled.");
+    }
+
+
 }

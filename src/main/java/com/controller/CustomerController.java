@@ -80,13 +80,20 @@ public class CustomerController {
     }
 
     /**
-     * Cancels an order if it is still in an unconfirmed state.
+     * Allows customers to cancel their orders (Only "CANCELED" status is allowed).
      */
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
-    @PostMapping("/api/v1/orders/{orderNumber}/cancel")
-    public ResponseEntity<Map<String, String>> cancelOrder(@PathVariable String orderNumber) {
-        // Updated to return a custom message in the cancellation response
-        customerService.cancelOrder(orderNumber);
-        return ResponseEntity.ok(Map.of("message", "Order successfully canceled.")); // Added custom cancellation message
+    @PatchMapping("/orders/{orderNumber}/status")
+    public ResponseEntity<Map<String, String>> updateOrderStatus(
+            @PathVariable String orderNumber,
+            @RequestBody Map<String, String> requestBody) {
+
+        String newStatus = requestBody.get("status");
+
+        if (newStatus == null || newStatus.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Status must be provided."));
+        }
+
+        return ResponseEntity.ok(customerService.updateOrderStatus(orderNumber, newStatus));
     }
 }
