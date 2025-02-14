@@ -106,7 +106,7 @@ public class RestaurantController {
      * Updates the status of an order for a specific restaurant.
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @PutMapping("/{slug}/orders/{orderId}/status")
+    @PatchMapping("/{slug}/orders/{orderId}/status")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable String slug,
             @PathVariable String orderId,
@@ -152,21 +152,22 @@ public class RestaurantController {
     }
 
 
-
     /**
-     * Updates the availability status of a menu item.
+     * Updates the availability status of a menu item for a specific restaurant.
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @PutMapping("/menu/items/availability")
-    public ResponseEntity<?> updateMenuItemAvailability(@RequestBody Map<String, Object> request) {
+    @PutMapping("/{slug}/menu/items/{menuItemId}")
+    public ResponseEntity<?> updateMenuItemAvailability(
+            @PathVariable String slug,
+            @PathVariable Long menuItemId,
+            @RequestBody Map<String, Boolean> request) {
         try {
-            // ✅ Validate input
-            if (!request.containsKey("menuItemId") || !request.containsKey("isAvailable")) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Missing 'menuItemId' or 'isAvailable' field."));
+            // ✅ Validate request body
+            if (!request.containsKey("isAvailable")) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Missing 'isAvailable' field."));
             }
 
-            Long menuItemId = Long.valueOf(request.get("menuItemId").toString());
-            boolean isAvailable = Boolean.parseBoolean(request.get("isAvailable").toString());
+            boolean isAvailable = request.get("isAvailable");
 
             String username = getLoggedInUsername();
 
@@ -174,8 +175,8 @@ public class RestaurantController {
             MenuItem menuItem = menuItemRepository.findById(menuItemId)
                     .orElseThrow(() -> new RuntimeException("Menu item not found."));
 
-            // ✅ Ensure the employee is authorized for this restaurant
-            if (!restaurantService.isEmployeeAuthorizedForRestaurant(username, menuItem.getRestaurant().getSlug())) {
+            // ✅ Ensure employee is authorized to modify this restaurant's menu
+            if (!restaurantService.isEmployeeAuthorizedForRestaurant(username, slug)) {
                 return ResponseEntity.status(403).body(Map.of("error", "Unauthorized access"));
             }
 
@@ -185,7 +186,7 @@ public class RestaurantController {
 
             return ResponseEntity.ok(Map.of(
                     "message", "Menu item availability updated successfully.",
-                    "restaurantSlug", menuItem.getRestaurant().getSlug(),
+                    "restaurantSlug", slug,
                     "menuItemId", menuItem.getId(),
                     "menuItemName", menuItem.getName(),
                     "newAvailability", menuItem.isAvailable()
@@ -194,6 +195,9 @@ public class RestaurantController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+
+
 
 
     /**

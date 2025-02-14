@@ -1,6 +1,7 @@
 package com.controller;
 
-import com.dto.InventoryUpdateRequest;
+
+import com.dto.InventoryUpdateRequestDTO;
 import com.model.MenuItem;
 import com.service.MenuItemService;
 import org.apache.commons.csv.CSVFormat;
@@ -26,7 +27,7 @@ import java.util.Optional;
  * Handles menu item operations, including CRUD actions, inventory updates, and CSV uploads.
  */
 @RestController
-@RequestMapping("/restaurant/menu-items")
+@RequestMapping("api/v1/restaurants/{slug}/menu-items")
 public class MenuItemController {
 
     @Autowired
@@ -73,19 +74,29 @@ public class MenuItemController {
     }
 
     /**
-     * Updates the inventory of menu items for a specific restaurant.
+     * Updates the inventory of a single menu item for a specific restaurant.
      */
-    @PostMapping("/{slug}/menu/inventory")
+    @PatchMapping("/{menuItemId}/inventory")
     public ResponseEntity<?> updateInventory(
             @PathVariable String slug,
-            @RequestBody List<InventoryUpdateRequest> inventoryUpdates) {
+            @PathVariable Long menuItemId,
+            @RequestBody InventoryUpdateRequestDTO inventoryUpdate) {
         try {
-            menuItemService.updateInventory(slug, inventoryUpdates);
-            return ResponseEntity.ok(Map.of("message", "Inventory updated successfully."));
+            // Call service layer to update inventory
+            menuItemService.updateInventory(slug, inventoryUpdate);
+
+            return ResponseEntity.ok(Map.of(
+                    "message", "Inventory updated successfully.",
+                    "menuItemId", menuItemId,
+                    "newInventory", inventoryUpdate.getQuantity()
+            ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
+
+
 
     /**
      * Uploads a CSV file to update the menu items.

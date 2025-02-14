@@ -3,14 +3,14 @@ package com.dto;
 /**
  * DTO for updating inventory of a menu item.
  */
-public class InventoryUpdateRequest {
+public class InventoryUpdateRequestDTO {
 
     private Long menuItemId;
     private int quantity;
 
-    public InventoryUpdateRequest() {}
+    public InventoryUpdateRequestDTO() {}
 
-    public InventoryUpdateRequest(Long menuItemId, int quantity) {
+    public InventoryUpdateRequestDTO(Long menuItemId, int quantity) {
         this.menuItemId = menuItemId;
         this.quantity = quantity;
     }

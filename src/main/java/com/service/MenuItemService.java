@@ -2,7 +2,7 @@
 
 package com.service;
 
-import com.dto.InventoryUpdateRequest;
+import com.dto.InventoryUpdateRequestDTO;
 import com.exception.ResourceNotFoundException;
 import com.model.AppUser;
 import com.model.MenuItem;
@@ -57,23 +57,18 @@ public class MenuItemService {
      * Update inventory for menu items in a specific restaurant.
      */
     @Transactional
-    public void updateInventory(String slug, List<InventoryUpdateRequest> inventoryUpdates) {
-        for (InventoryUpdateRequest request : inventoryUpdates) {
-            MenuItem menuItem = menuItemRepository.findById(request.getMenuItemId())
-                    .orElseThrow(() -> new ResourceNotFoundException("MenuItem not found with ID: " + request.getMenuItemId()));
+    public void updateInventory(String slug, InventoryUpdateRequestDTO inventoryUpdate) {
+        MenuItem menuItem = menuItemRepository.findById(inventoryUpdate.getMenuItemId())
+                .orElseThrow(() -> new ResourceNotFoundException("MenuItem not found with ID: " + inventoryUpdate.getMenuItemId()));
 
-            if (!menuItem.getRestaurant().getSlug().equals(slug)) {
-                throw new IllegalArgumentException("MenuItem does not belong to the restaurant with slug: " + slug);
-            }
-
-            menuItem.setInventory(menuItem.getInventory() + request.getQuantity());
-            if (menuItem.getInventory() < 0) {
-                throw new IllegalArgumentException("Inventory cannot be negative for MenuItem ID: " + menuItem.getId());
-            }
-
-            menuItemRepository.save(menuItem);
+        if (!menuItem.getRestaurant().getSlug().equals(slug)) {
+            throw new IllegalArgumentException("MenuItem does not belong to restaurant: " + slug);
         }
+
+        menuItem.setInventory(inventoryUpdate.getQuantity());
+        menuItemRepository.save(menuItem);
     }
+
 
     /**
      * Update a menu item.
