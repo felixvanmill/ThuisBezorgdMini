@@ -92,32 +92,8 @@ public class RestaurantController {
             @PathVariable Long menuItemId,
             @RequestBody Map<String, Boolean> request) {
         try {
-            // ✅ Validate request body
-            if (!request.containsKey("isAvailable")) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Missing 'isAvailable' field."));
-            }
-
-            boolean isAvailable = request.get("isAvailable");
-
-            String username = getLoggedInUsername();
-
-            MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                    .orElseThrow(() -> new RuntimeException("Menu item not found."));
-
-            if (!restaurantService.isEmployeeAuthorizedForRestaurant(username, slug)) {
-                return ResponseEntity.status(403).body(Map.of("error", "Unauthorized access"));
-            }
-
-            menuItem.setAvailable(isAvailable);
-            menuItemRepository.save(menuItem);
-
-            return ResponseEntity.ok(Map.of(
-                    "message", "Menu item availability updated successfully.",
-                    "restaurantSlug", slug,
-                    "menuItemId", menuItem.getId(),
-                    "menuItemName", menuItem.getName(),
-                    "newAvailability", menuItem.isAvailable()
-            ));
+            String username = com.utils.AuthUtils.getLoggedInUsername();
+            return restaurantService.updateMenuItemAvailability(username, slug, menuItemId, request);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
@@ -127,28 +103,11 @@ public class RestaurantController {
     /**
      * Downloads a CSV of orders for the authenticated restaurant.
      */
-    @GetMapping(value = "/orders/download", produces = "text/csv")
-    public ResponseEntity<?> downloadOrdersAsCsv() {
-        try {
-            String username = getLoggedInUsername();
-            Long restaurantId = getAuthenticatedRestaurantId(username);
-
-            if (restaurantId == null) {
-                return ResponseEntity.status(403).body(Map.of("error", "Unauthorized access"));
-            }
-
-            List<OrderDTO> orders = customerOrderRepository.findByRestaurant_IdWithDetails(restaurantId);
-            byte[] csvBytes = generateCsvFromDTO(orders).getBytes(StandardCharsets.UTF_8);
-
-            return ResponseEntity.ok()
-                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=orders.csv")
-                    .header(HttpHeaders.CONTENT_TYPE, "text/csv")
-                    .body(csvBytes);
-        } catch (Exception e) {
-            return ResponseEntity.status(500).body(Map.of("error", "Failed to generate CSV"));
-        }
+    @GetMapping("/orders/download")
+    public ResponseEntity<byte[]> downloadOrdersAsCsv() {
+        String username = getLoggedInUsername();
+        return restaurantService.downloadOrdersAsCsv(username);
     }
-
 
 
     /**

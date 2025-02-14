@@ -2,6 +2,7 @@
 
 package com.service;
 
+import com.dto.OrderDTO;
 import com.dto.RestaurantDTO;
 import com.model.MenuItem;
 import com.model.CustomerOrder;
@@ -12,10 +13,13 @@ import com.repository.MenuItemRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.RestaurantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.utils.CsvUtils;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -254,5 +258,52 @@ public class RestaurantService {
         return ResponseEntity.ok(Map.of("message", "Order status updated successfully."));
     }
 
+    @Transactional
+    public ResponseEntity<?> updateMenuItemAvailability(String username, String slug, Long menuItemId, Map<String, Boolean> request) {
+        if (!request.containsKey("isAvailable")) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Missing 'isAvailable' field."));
+        }
+
+        boolean isAvailable = request.get("isAvailable");
+
+        if (!isEmployeeAuthorizedForRestaurant(username, slug)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Unauthorized access"));
+        }
+
+        MenuItem menuItem = menuItemRepository.findById(menuItemId)
+                .orElseThrow(() -> new RuntimeException("Menu item not found."));
+
+        menuItem.setAvailable(isAvailable);
+        menuItemRepository.save(menuItem);
+
+        return ResponseEntity.ok(Map.of(
+                "message", "Menu item availability updated successfully.",
+                "restaurantSlug", slug,
+                "menuItemId", menuItem.getId(),
+                "menuItemName", menuItem.getName(),
+                "newAvailability", menuItem.isAvailable()
+        ));
+    }
+
+
+    @Transactional(readOnly = true)
+    public ResponseEntity<byte[]> downloadOrdersAsCsv(String username) {
+        Long restaurantId = getAuthenticatedRestaurantId(username);
+        if (restaurantId == null) {
+            return ResponseEntity.badRequest().body(null);
+        }
+
+        List<OrderDTO> orders = customerOrderRepository.findByRestaurant_IdWithDetails(restaurantId);
+
+        // Generate CSV content using CsvUtils (now includes fetching items)
+        String csvContent = CsvUtils.generateCsvFromDTO(orders, customerOrderRepository);
+        byte[] csvBytes = csvContent.getBytes(StandardCharsets.UTF_8);
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=orders.csv");
+        headers.add(HttpHeaders.CONTENT_TYPE, "text/csv");
+
+        return ResponseEntity.ok().headers(headers).body(csvBytes);
+    }
 
 }
