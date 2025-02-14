@@ -17,7 +17,19 @@ public class RestaurantDTO {
     private List<MenuItemDTO> menuItems;
 
     /**
-     * Constructs a RestaurantDTO with restaurant and menu item details.
+     * ✅ New Simple Constructor for Basic Restaurant → RestaurantDTO Mapping
+     */
+    public RestaurantDTO(Restaurant restaurant) {
+        if (restaurant == null) {
+            throw new IllegalArgumentException("Restaurant cannot be null");
+        }
+        this.name = restaurant.getName();
+        this.slug = restaurant.getSlug();
+        this.menuItems = new ArrayList<>();  // Default empty list
+    }
+
+    /**
+     * ✅ Full Constructor for RestaurantDTO with Menu Items
      *
      * @param restaurant       The Restaurant entity (cannot be null).
      * @param menuItems        List of menu items associated with the restaurant.
@@ -29,11 +41,10 @@ public class RestaurantDTO {
         }
         this.name = restaurant.getName();
         this.slug = restaurant.getSlug();
-        this.menuItems = (menuItems != null)
+        this.menuItems = (menuItems != null && !menuItems.isEmpty())
                 ? menuItems.stream().map(menuItem -> new MenuItemDTO(menuItem, includeInventory)).toList()
-                : new ArrayList<>(); //
+                : new ArrayList<>();
     }
-
 
     // Getters
     public String getName() {

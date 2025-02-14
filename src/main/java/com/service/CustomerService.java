@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * Handles customer-related operations such as retrieving menus, placing orders, and tracking orders.
@@ -43,18 +44,28 @@ public class CustomerService {
     }
 
     /**
-     * Retrieves the menu of a specific restaurant by its slug.
-     *
-     * @param slug The restaurant's unique slug.
-     * @return A list of menu items available at the restaurant.
+     * Retrieves the menu of a restaurant by its slug.
+     * If the logged-in user is a RESTAURANT_EMPLOYEE, it includes inventory details.
      */
     public List<MenuItemDTO> getMenuByRestaurantSlug(String slug) {
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
+        boolean includeInventory = isRestaurantEmployee();
+
         return restaurant.getMenuItems().stream()
-                .map(menuItem -> new MenuItemDTO(menuItem, false))
+                .map(menuItem -> new MenuItemDTO(menuItem, includeInventory))
                 .toList();
+    }
+
+    /**
+     * Determines if the currently authenticated user is a RESTAURANT_EMPLOYEE.
+     */
+    private boolean isRestaurantEmployee() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return appUserRepository.findByUsername(username)
+                .map(user -> user.getRole().name().equalsIgnoreCase("RESTAURANT_EMPLOYEE"))
+                .orElse(false);
     }
 
     /**
@@ -166,19 +177,20 @@ public class CustomerService {
     }
 
     /**
-     * Retrieves all restaurants from the database.
-     *
-     * @return List of all available restaurants.
+     * Retrieves a list of all restaurants, including their menu items.
      */
+    @Transactional(readOnly = true)
     public List<RestaurantDTO> getAllRestaurants() {
-        return restaurantRepository.findAll().stream()
-                .map(restaurant -> new RestaurantDTO(
-                        restaurant,
-                        restaurant.getMenuItems() != null ? new ArrayList<>(restaurant.getMenuItems()) : new ArrayList<>(),
-                        false
-                ))
-                .toList();
+        boolean includeInventory = isRestaurantEmployee();
+
+        List<Restaurant> restaurants = restaurantRepository.findAll();  // Fetch all restaurants
+        restaurants.forEach(restaurant -> Hibernate.initialize(restaurant.getMenuItems())); // Ensure menu items are loaded
+
+        return restaurants.stream()
+                .map(restaurant -> new RestaurantDTO(restaurant, restaurant.getMenuItems(), includeInventory))
+                .collect(Collectors.toList());
     }
+
 
     /**
      * Retrieves the username of the currently authenticated user.

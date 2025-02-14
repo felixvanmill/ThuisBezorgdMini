@@ -1,5 +1,7 @@
 package com.controller;
 
+import com.dto.CustomerOrderDTO;
+import com.service.CustomerService;
 import com.dto.RestaurantDTO;
 import com.dto.OrderDTO;
 import com.model.CustomerOrder;
@@ -27,7 +29,7 @@ import java.util.stream.Collectors;
  * Handles operations related to restaurants, including menu management and order updates.
  */
 @RestController
-@RequestMapping("/restaurant")
+@RequestMapping("/api/v1/restaurants")
 public class RestaurantController {
 
     @Autowired
@@ -42,18 +44,61 @@ public class RestaurantController {
     @Autowired
     private AppUserRepository appUserRepository;
 
+
     /**
-     * Retrieves the restaurant menu for customers, excluding inventory details.
+     * Retrieves a list of all available restaurants with menu items.
      */
-    @GetMapping("/{slug}/menu")
-    public ResponseEntity<?> getMenuBySlug(@PathVariable String slug) {
-        try {
-            RestaurantDTO restaurantDTO = restaurantService.getRestaurantWithMenu(slug, false); // Exclude inventory
-            return ResponseEntity.ok(restaurantDTO.getMenuItems());
-        } catch (RuntimeException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+    @GetMapping
+    public ResponseEntity<List<RestaurantDTO>> getAllRestaurants() {
+        boolean isEmployee = isRestaurantEmployee();
+        List<RestaurantDTO> restaurantDTOs;
+
+        if (isEmployee) {
+            // Get the restaurant ID of the logged-in employee
+            String username = getLoggedInUsername();
+            Long restaurantId = getAuthenticatedRestaurantId(username);
+
+            if (restaurantId == null) {
+                return ResponseEntity.badRequest().body(List.of());
+            }
+
+            // Fetch only the assigned restaurant
+            Restaurant restaurant = restaurantService.getRestaurantById(restaurantId)
+                    .orElseThrow(() -> new RuntimeException("Restaurant not found"));
+
+            restaurantDTOs = List.of(new RestaurantDTO(
+                    restaurant,
+                    restaurant.getMenuItems(),
+                    true // Include inventory for employees
+            ));
+        } else {
+            // Fetch all restaurants for customers
+            restaurantDTOs = restaurantService.getAllRestaurants()
+                    .stream()
+                    .map(restaurant -> new RestaurantDTO(
+                            restaurant,
+                            restaurant.getMenuItems(),
+                            false // Exclude inventory for customers
+                    ))
+                    .collect(Collectors.toList());
         }
+
+        return ResponseEntity.ok(restaurantDTOs);
     }
+
+
+
+    private boolean isRestaurantEmployee() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null || authentication.getAuthorities() == null) {
+            return false;
+        }
+
+        return authentication.getAuthorities().stream()
+                .anyMatch(authority -> authority.getAuthority().equals("ROLE_RESTAURANT_EMPLOYEE"));
+    }
+
 
     /**
      * Retrieves the restaurant menu for employees, including inventory details.
@@ -73,45 +118,53 @@ public class RestaurantController {
      * Updates the status of an order for a specific restaurant.
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @PostMapping("/{slug}/orders/{identifier}/updateStatus")
+    @PatchMapping("/{slug}/orders/{orderId}/status")
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable String slug,
-            @PathVariable String identifier,
-            @RequestParam String status) {
+            @PathVariable String orderId,
+            @RequestBody Map<String, String> requestBody) {
         try {
+            // Extract status from request body
+            String status = requestBody.get("status");
+            if (status == null || status.isBlank()) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Status must be provided."));
+            }
+
             // Fetch restaurant by slug
             Restaurant restaurant = restaurantService.getRestaurantBySlug(slug)
                     .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
 
-            // Fetch order by ID or order number
-            CustomerOrder order = identifier.matches("\\d+")
-                    ? restaurantService.getOrderById(Long.parseLong(identifier))
-                    : restaurantService.getOrderByOrderNumber(identifier);
+            // Fetch order by order ID
+            CustomerOrder order = restaurantService.getOrderByOrderNumber(orderId);
 
             // Validate restaurant ownership of the order
             if (!order.getRestaurant().getId().equals(restaurant.getId())) {
-                throw new RuntimeException("Order does not belong to the specified restaurant.");
+                return ResponseEntity.badRequest().body(Map.of("error", "Order does not belong to this restaurant."));
             }
 
-            // Validate and update order status
-            OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
-            if (OrderStatus.CONFIRMED == orderStatus && OrderStatus.UNCONFIRMED != order.getStatus()) {
-                throw new RuntimeException("Order must be UNCONFIRMED to transition to CONFIRMED.");
+            // Validate and update order status safely
+            try {
+                OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+                order.setStatus(orderStatus);
+            } catch (IllegalArgumentException e) {
+                return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value."));
             }
 
-            order.setStatus(orderStatus);
+            // Save updated order
             restaurantService.saveOrder(order);
 
+            // Return success response
             return ResponseEntity.ok(Map.of(
                     "message", "Order status updated successfully.",
                     "orderId", order.getId(),
                     "orderNumber", order.getOrderNumber(),
-                    "newStatus", status
+                    "newStatus", order.getStatus().toString()
             ));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
 
     /**
      * Updates the availability status of a menu item.

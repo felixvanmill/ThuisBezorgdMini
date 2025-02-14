@@ -29,13 +29,6 @@ public class CustomerController {
         this.customerService = customerService;
     }
 
-    /**
-     * Retrieves a list of all available restaurants.
-     */
-    @GetMapping("/restaurants")
-    public ResponseEntity<List<RestaurantDTO>> getAllRestaurants() {
-        return ResponseEntity.ok(customerService.getAllRestaurants());
-    }
 
     /**
      * Retrieves the menu of a restaurant by its slug.

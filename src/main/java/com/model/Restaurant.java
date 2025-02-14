@@ -22,7 +22,7 @@ public class Restaurant {
     @Column(unique = true, nullable = false) // Ensure slug is unique and required
     private String slug;
 
-    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<MenuItem> menuItems;
 
     @OneToMany(mappedBy = "restaurant", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
