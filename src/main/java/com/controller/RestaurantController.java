@@ -1,7 +1,6 @@
 package com.controller;
 
 import com.dto.CustomerOrderDTO;
-import com.service.CustomerService;
 import com.dto.RestaurantDTO;
 import com.dto.OrderDTO;
 import com.model.CustomerOrder;
@@ -11,6 +10,7 @@ import com.model.Restaurant;
 import com.repository.AppUserRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.MenuItemRepository;
+import com.service.OrderService;
 import com.service.RestaurantService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -44,63 +44,24 @@ public class RestaurantController {
     @Autowired
     private AppUserRepository appUserRepository;
 
+    @Autowired
+    private OrderService orderService;
+
 
     /**
      * Retrieves a list of all available restaurants with menu items.
      */
     @GetMapping
     public ResponseEntity<List<RestaurantDTO>> getAllRestaurants() {
-        boolean isEmployee = isRestaurantEmployee();
-        List<RestaurantDTO> restaurantDTOs;
+        boolean isEmployee = com.utils.AuthUtils.isRestaurantEmployee();
+        String username = com.utils.AuthUtils.getLoggedInUsername();
 
-        if (isEmployee) {
-            // Get the restaurant ID of the logged-in employee
-            String username = getLoggedInUsername();
-            Long restaurantId = getAuthenticatedRestaurantId(username);
-
-            if (restaurantId == null) {
-                return ResponseEntity.badRequest().body(List.of());
-            }
-
-            // Fetch only the assigned restaurant
-            Restaurant restaurant = restaurantService.getRestaurantById(restaurantId)
-                    .orElseThrow(() -> new RuntimeException("Restaurant not found"));
-
-            restaurantDTOs = List.of(new RestaurantDTO(
-                    restaurant,
-                    restaurant.getMenuItems(),
-                    true // Include inventory for employees
-            ));
-        } else {
-            // Fetch all restaurants for customers
-            restaurantDTOs = restaurantService.getAllRestaurants()
-                    .stream()
-                    .map(restaurant -> new RestaurantDTO(
-                            restaurant,
-                            restaurant.getMenuItems(),
-                            false // Exclude inventory for customers
-                    ))
-                    .collect(Collectors.toList());
-        }
+        List<RestaurantDTO> restaurantDTOs = isEmployee
+                ? restaurantService.getRestaurantsForEmployee(username)
+                : restaurantService.getAllRestaurantsWithMenu();
 
         return ResponseEntity.ok(restaurantDTOs);
     }
-
-
-
-    private boolean isRestaurantEmployee() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-
-        if (authentication == null || authentication.getAuthorities() == null) {
-            return false;
-        }
-
-        return authentication.getAuthorities().stream()
-                .anyMatch(authority -> authority.getAuthority().equals("ROLE_RESTAURANT_EMPLOYEE"));
-    }
-
-
-
 
     /**
      * Updates the status of an order for a specific restaurant.
@@ -112,44 +73,13 @@ public class RestaurantController {
             @PathVariable String orderId,
             @RequestBody Map<String, String> requestBody) {
         try {
-            String username = getLoggedInUsername();
-
-            // ✅ Step 1: Ensure employee is assigned to this restaurant
-            if (!restaurantService.isEmployeeAuthorizedForRestaurant(username, slug)) {
-                return ResponseEntity.status(403).body(Map.of("error", "Unauthorized access"));
-            }
-
-            // ✅ Step 2: Fetch restaurant and order
-            Restaurant restaurant = restaurantService.getRestaurantBySlug(slug)
-                    .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
-
-            CustomerOrder order = restaurantService.getOrderByOrderNumber(orderId);
-
-            // ✅ Step 3: Validate order ownership
-            if (!order.getRestaurant().getId().equals(restaurant.getId())) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Order does not belong to this restaurant."));
-            }
-
-            // ✅ Step 4: Validate and update order status
-            String status = requestBody.get("status");
-            if (status == null || status.isBlank()) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Status must be provided."));
-            }
-
-            try {
-                OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
-                order.setStatus(orderStatus);
-            } catch (IllegalArgumentException e) {
-                return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value."));
-            }
-
-            // ✅ Step 5: Save and return success
-            restaurantService.saveOrder(order);
-            return ResponseEntity.ok(Map.of("message", "Order status updated successfully."));
+            String username = com.utils.AuthUtils.getLoggedInUsername();
+            return restaurantService.updateOrderStatus(username, slug, orderId, requestBody);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
+
 
 
     /**
@@ -171,16 +101,13 @@ public class RestaurantController {
 
             String username = getLoggedInUsername();
 
-            // ✅ Fetch menu item
             MenuItem menuItem = menuItemRepository.findById(menuItemId)
                     .orElseThrow(() -> new RuntimeException("Menu item not found."));
 
-            // ✅ Ensure employee is authorized to modify this restaurant's menu
             if (!restaurantService.isEmployeeAuthorizedForRestaurant(username, slug)) {
                 return ResponseEntity.status(403).body(Map.of("error", "Unauthorized access"));
             }
 
-            // ✅ Update and save
             menuItem.setAvailable(isAvailable);
             menuItemRepository.save(menuItem);
 
@@ -195,9 +122,6 @@ public class RestaurantController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         }
     }
-
-
-
 
 
     /**
@@ -284,4 +208,61 @@ public class RestaurantController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         return authentication.getName();
     }
+
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @GetMapping("/orders/{identifier}")
+    public ResponseEntity<?> getOrderByIdentifier(@PathVariable String identifier) {
+        try {
+            CustomerOrder order = identifier.matches("\\d+")
+                    ? customerOrderRepository.findById(Long.parseLong(identifier))
+                    .orElseThrow(() -> new RuntimeException("Order not found"))
+                    : customerOrderRepository.findByOrderNumber(identifier)
+                    .orElseThrow(() -> new RuntimeException("Order not found"));
+
+            return ResponseEntity.ok(new CustomerOrderDTO(order));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    /**
+     * Fetches orders for the logged-in restaurant employee.
+     */
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @GetMapping("/{slug}/orders")
+    public ResponseEntity<?> getOrdersForLoggedInEmployee(@PathVariable String slug) {
+        try {
+            String username = getLoggedInUsername();
+            List<CustomerOrderDTO> orders = restaurantService.getOrdersForEmployee(slug, username).stream()
+                    .map(CustomerOrderDTO::new)
+                    .collect(Collectors.toList());
+            return ResponseEntity.ok(orders);
+        } catch (Exception e) {
+            return ResponseEntity.status(403).body(Map.of("error", e.getMessage()));
+        }
+    }
+
+
+    /**
+     * Fetches orders based on their status.
+     */
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @GetMapping("/orders/status/{status}")
+    public ResponseEntity<?> getOrdersByStatus(@PathVariable String status) {
+        try {
+            OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+            List<CustomerOrderDTO> orders = orderService.getOrdersByStatus(orderStatus).stream()
+                    .map(CustomerOrderDTO::new)
+                    .collect(Collectors.toList());
+
+            if (orders.isEmpty()) {
+                return ResponseEntity.status(404).body(Map.of("error", "No orders found with status: " + status));
+            }
+
+            return ResponseEntity.ok(orders);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value: " + status));
+        }
+    }
+
 }

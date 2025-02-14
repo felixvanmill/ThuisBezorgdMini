@@ -7,14 +7,17 @@ import com.model.MenuItem;
 import com.model.CustomerOrder;
 import com.model.OrderStatus;
 import com.model.Restaurant;
+import com.repository.AppUserRepository;
 import com.repository.MenuItemRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.RestaurantRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -29,6 +32,9 @@ public class RestaurantService {
 
     @Autowired
     private MenuItemRepository menuItemRepository;
+
+    @Autowired
+    private AppUserRepository appUserRepository;
 
     /**
      * Get all restaurants.
@@ -194,4 +200,59 @@ public class RestaurantService {
                         .anyMatch(employee -> employee.getUsername().equals(username)))
                 .orElse(false);
     }
+
+    @Transactional(readOnly = true)
+    public List<RestaurantDTO> getRestaurantsForEmployee(String username) {
+        Long restaurantId = getAuthenticatedRestaurantId(username);
+        if (restaurantId == null) {
+            throw new RuntimeException("Employee is not associated with a restaurant.");
+        }
+
+        Restaurant restaurant = restaurantRepository.findById(restaurantId)
+                .orElseThrow(() -> new RuntimeException("Restaurant not found"));
+
+        return List.of(new RestaurantDTO(restaurant, restaurant.getMenuItems(), true)); // Include inventory
+    }
+
+
+
+    private Long getAuthenticatedRestaurantId(String username) {
+        return appUserRepository.findByUsername(username)
+                .map(user -> user.getRestaurant() != null ? user.getRestaurant().getId() : null)
+                .orElse(null);
+    }
+
+    @Transactional
+    public ResponseEntity<?> updateOrderStatus(String username, String slug, String orderId, Map<String, String> requestBody) {
+        if (!isEmployeeAuthorizedForRestaurant(username, slug)) {
+            return ResponseEntity.status(403).body(Map.of("error", "Unauthorized access"));
+        }
+
+        Restaurant restaurant = restaurantRepository.findBySlug(slug)
+                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+
+        CustomerOrder order = customerOrderRepository.findByOrderNumber(orderId)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        if (!order.getRestaurant().getId().equals(restaurant.getId())) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Order does not belong to this restaurant."));
+        }
+
+        String status = requestBody.get("status");
+        if (status == null || status.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Status must be provided."));
+        }
+
+        try {
+            OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
+            order.setStatus(orderStatus);
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value."));
+        }
+
+        customerOrderRepository.save(order);
+        return ResponseEntity.ok(Map.of("message", "Order status updated successfully."));
+    }
+
+
 }
