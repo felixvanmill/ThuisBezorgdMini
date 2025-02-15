@@ -4,11 +4,13 @@ import com.dto.CustomerOrderDTO;
 import com.model.CustomerOrder;
 import com.model.OrderStatus;
 import com.repository.CustomerOrderRepository;
+import com.utils.ValidationUtils;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -196,4 +198,34 @@ public class DeliveryService {
     private String getAuthenticatedUsername() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
+
+
+    @Transactional
+    public Map<String, Object> updateOrderStatus(String identifier, String status) {
+        CustomerOrder order = findOrderByIdentifier(identifier);
+        validateDeliveryPerson(order);
+
+        try {
+            OrderStatus newStatus = OrderStatus.valueOf(status.toUpperCase());
+
+            // ✅ Now using ValidationUtils
+            if (!ValidationUtils.isValidStatusTransition(order.getStatus(), newStatus)) {
+                throw new RuntimeException("Invalid status transition.");
+            }
+
+            order.setStatus(newStatus);
+            customerOrderRepository.save(order); // ✅ FIXED: Changed to customerOrderRepository
+
+            return Map.of(
+                    "message", "Order status updated successfully.",
+                    "orderId", order.getId(),
+                    "newStatus", newStatus
+            );
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Invalid order status: " + status);
+        }
+    }
+
+
+
 }

@@ -3,6 +3,8 @@ package com.controller;
 import com.dto.CustomerOrderDTO;
 import com.model.CustomerOrder;
 import com.service.DeliveryService;
+import com.utils.ResponseUtils;
+import com.utils.ValidationUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -14,7 +16,7 @@ import java.util.Map;
  * Handles delivery-related operations such as viewing, managing, and confirming orders.
  */
 @RestController
-@RequestMapping("/delivery")
+@RequestMapping("/api/v1/delivery")
 public class DeliveryController {
 
     private final DeliveryService deliveryService;
@@ -134,5 +136,21 @@ public class DeliveryController {
         CustomerOrderDTO order = deliveryService.getOrderDetails(orderNumber);
         return ResponseEntity.ok(order);
     }
+
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
+    @PatchMapping("/orders/{identifier}/status")
+    public ResponseEntity<?> updateOrderStatus(
+            @PathVariable String identifier,
+            @RequestBody Map<String, String> requestBody) {
+
+        return ResponseUtils.handleRequest(() -> {
+            if (!ValidationUtils.isValidStatus(requestBody, "status")) {
+                throw new IllegalArgumentException("Status must be provided.");
+            }
+
+            return deliveryService.updateOrderStatus(identifier, requestBody.get("status"));
+        });
+    }
+
 
 }
