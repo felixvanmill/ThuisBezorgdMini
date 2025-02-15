@@ -100,11 +100,22 @@ public class RestaurantController {
     }
 
 
-
+    /**
+     * Fetches orders by ordernumber in format "ORDER001", for restaurant employees
+     */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/orders/{identifier}")
     public ResponseEntity<?> getOrderByIdentifier(@PathVariable String identifier) {
         return handleRequest(() -> orderService.getOrderByIdentifier(identifier));
+    }
+
+    /**
+     * Fetches orders by order ID (numeric), for restaurant employees
+     */
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    @GetMapping("/orders/id/{orderId}")
+    public ResponseEntity<CustomerOrderDTO> getOrderById(@PathVariable Long orderId) {
+        return handleRequest(() -> new CustomerOrderDTO(orderService.getOrderById(orderId)));
     }
 
 
