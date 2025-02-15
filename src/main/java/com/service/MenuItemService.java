@@ -8,6 +8,7 @@ import com.model.AppUser;
 import com.model.MenuItem;
 import com.repository.AppUserRepository;
 import com.repository.MenuItemRepository;
+import com.utils.CsvUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -165,6 +166,10 @@ public class MenuItemService {
         return errorMessages;
     }
 
+    @Transactional
+    public List<String> processCsvFile(MultipartFile file, Long restaurantId) {
+        return CsvUtils.processMenuCsvFile(file, restaurantId, this);
+    }
 
 
 

@@ -4,6 +4,9 @@ package com.controller;
 import com.dto.InventoryUpdateRequestDTO;
 import com.model.MenuItem;
 import com.service.MenuItemService;
+import com.utils.AuthUtils;
+import com.utils.FileUtils;
+import com.utils.ResponseUtils;
 import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.commons.csv.CSVRecord;
@@ -105,14 +108,11 @@ public class MenuItemController {
     @PostMapping("/upload")
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     public ResponseEntity<?> uploadMenu(@RequestParam("file") MultipartFile file) {
-        try {
-            validateFile(file);
-
-            Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-            String username = authentication.getName();
+        return ResponseUtils.handleRequest(() -> {
+            FileUtils.validateCsvFile(file);
+            String username = AuthUtils.getLoggedInUsername();
             Long restaurantId = menuItemService.getRestaurantIdForUser(username);
-
-            List<String> errorMessages = processCsvFile(file, restaurantId);
+            List<String> errorMessages = menuItemService.processCsvFile(file, restaurantId);
 
             if (!errorMessages.isEmpty()) {
                 return ResponseEntity.badRequest().body(Map.of(
@@ -120,13 +120,11 @@ public class MenuItemController {
                         "errors", errorMessages
                 ));
             }
-
             return ResponseEntity.ok(Map.of("message", "Menu updated successfully!"));
-
-        } catch (Exception e) {
-            return ResponseEntity.internalServerError().body(Map.of("error", "An unexpected error occurred: " + e.getMessage()));
-        }
+        });
     }
+
+
 
     /**
      * Validates the uploaded file.
