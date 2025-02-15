@@ -31,6 +31,7 @@ public class OrderService {
         this.addressRepository = addressRepository;
     }
 
+
     /**
      * Get an order by ID.
      */
@@ -39,11 +40,15 @@ public class OrderService {
         return orderRepository.findCustomerOrderById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
     }
-
     /**
      * Get an order by identifier (either ID or order number).
      */
+    @Transactional(readOnly = true)
     public CustomerOrderDTO getOrderByIdentifier(String identifier) {
+        if (identifier == null || identifier.trim().isEmpty()) {
+            throw new ValidationException("Order identifier cannot be null or empty.");
+        }
+
         CustomerOrder order;
         if (identifier.matches("\\d+")) {
             try {

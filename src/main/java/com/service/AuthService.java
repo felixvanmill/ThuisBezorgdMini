@@ -60,8 +60,8 @@ public class AuthService {
      * @throws AuthenticationException if the password is incorrect.
      */
     public JwtResponse login(LoginRequestDTO request) {
-        AppUser user = userService.getUserByUsername(request.getUsername())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found."));
+        AppUser user = userService.getUserByUsername(request.getUsername());
+
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
             throw new AuthenticationException("Incorrect username or password.");

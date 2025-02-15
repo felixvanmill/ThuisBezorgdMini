@@ -69,12 +69,8 @@ public class RestaurantService {
     @Transactional(readOnly = true)
     public List<RestaurantDTO> getRestaurantsForEmployee(String username) {
         Long restaurantId = getAuthenticatedRestaurantId(username);
-        if (restaurantId == null) {
-            throw new ValidationException("Employee is not associated with a restaurant.");
-        }
-
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found for employee: " + username));
 
         return List.of(new RestaurantDTO(restaurant, restaurant.getMenuItems(), true)); // Include inventory
     }
@@ -82,11 +78,11 @@ public class RestaurantService {
     private Long getAuthenticatedRestaurantId(String username) {
         return appUserRepository.findByUsername(username)
                 .map(user -> user.getRestaurant() != null ? user.getRestaurant().getId() : null)
-                .orElse(null);
+                .orElseThrow(() -> new ResourceNotFoundException("User not found: " + username));
     }
 
     @Transactional
-    public ResponseEntity<?> updateOrderStatus(String username, String slug, String orderId, Map<String, String> requestBody) {
+    public Map<String, Object> updateOrderStatus(String username, String slug, String orderId, Map<String, String> requestBody) {
         if (!isEmployeeAuthorizedForRestaurant(username, slug)) {
             throw new ValidationException("Unauthorized access to restaurant: " + slug);
         }
@@ -114,11 +110,11 @@ public class RestaurantService {
         }
 
         customerOrderRepository.save(order);
-        return ResponseEntity.ok(Map.of("message", "Order status updated successfully."));
+        return Map.of("message", "Order status updated successfully.");
     }
 
     @Transactional
-    public ResponseEntity<?> updateMenuItemAvailability(String username, String slug, Long menuItemId, Map<String, Boolean> request) {
+    public Map<String, Object> updateMenuItemAvailability(String username, String slug, Long menuItemId, Map<String, Boolean> request) {
         if (!request.containsKey("isAvailable")) {
             throw new ValidationException("Missing 'isAvailable' field.");
         }
@@ -135,22 +131,18 @@ public class RestaurantService {
         menuItem.setAvailable(isAvailable);
         menuItemRepository.save(menuItem);
 
-        return ResponseEntity.ok(Map.of(
+        return Map.of(
                 "message", "Menu item availability updated successfully.",
                 "restaurantSlug", slug,
                 "menuItemId", menuItem.getId(),
                 "menuItemName", menuItem.getName(),
                 "newAvailability", menuItem.isAvailable()
-        ));
+        );
     }
 
     @Transactional(readOnly = true)
     public ResponseEntity<byte[]> downloadOrdersAsCsv(String username) {
         Long restaurantId = getAuthenticatedRestaurantId(username);
-        if (restaurantId == null) {
-            throw new ValidationException("Employee is not associated with a restaurant.");
-        }
-
         List<OrderDTO> orders = customerOrderRepository.findByRestaurant_IdWithDetails(restaurantId);
 
         String csvContent = CsvUtils.generateCsvFromDTO(orders, customerOrderRepository);

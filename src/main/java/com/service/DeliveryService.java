@@ -59,7 +59,13 @@ public class DeliveryService {
         }
 
         CustomerOrder order = OrderUtils.findOrderByIdentifier(customerOrderRepository, identifier);
+        if (order == null) {
+            throw new ResourceNotFoundException("Order not found with identifier: " + identifier);
+        }
 
+        if (order.getDeliveryPerson() != null) {
+            throw new ValidationException("Order is already assigned to another delivery person.");
+        }
 
         order.setDeliveryPerson(loggedInUser);
         customerOrderRepository.save(order);
@@ -122,7 +128,9 @@ public class DeliveryService {
         }
 
         CustomerOrder order = OrderUtils.findOrderByIdentifier(customerOrderRepository, identifier);
-
+        if (order == null) {
+            throw new ResourceNotFoundException("Order not found with identifier: " + identifier);
+        }
 
         ValidationUtils.validateDeliveryPerson(order, loggedInUser);
         return new CustomerOrderDTO(order);
@@ -148,7 +156,9 @@ public class DeliveryService {
         }
 
         CustomerOrder order = OrderUtils.findOrderByIdentifier(customerOrderRepository, identifier);
-
+        if (order == null) {
+            throw new ResourceNotFoundException("Order not found with identifier: " + identifier);
+        }
 
         ValidationUtils.validateDeliveryPerson(order, loggedInUser);
         OrderStatus newStatus = ValidationUtils.parseOrderStatus(status);
@@ -177,7 +187,9 @@ public class DeliveryService {
         }
 
         CustomerOrder order = OrderUtils.findOrderByIdentifier(customerOrderRepository, identifier);
-
+        if (order == null) {
+            throw new ResourceNotFoundException("Order not found with identifier: " + identifier);
+        }
 
         ValidationUtils.validateDeliveryPerson(order, loggedInUser);
 

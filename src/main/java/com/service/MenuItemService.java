@@ -50,6 +50,11 @@ public class MenuItemService {
      */
     public MenuItem addMenuItem(MenuItem menuItem) {
         validateMenuItem(menuItem);
+
+        if (menuItem.getRestaurant() == null) {
+            throw new ValidationException("Menu item must be associated with a restaurant.");
+        }
+
         return menuItemRepository.save(menuItem);
     }
 
@@ -65,6 +70,10 @@ public class MenuItemService {
             throw new ValidationException("MenuItem does not belong to restaurant: " + slug);
         }
 
+        if (inventoryUpdate.getQuantity() < 0) {
+            throw new ValidationException("Inventory cannot be negative.");
+        }
+
         menuItem.setInventory(inventoryUpdate.getQuantity());
         menuItemRepository.save(menuItem);
     }
@@ -75,7 +84,7 @@ public class MenuItemService {
     @Transactional
     public MenuItem updateMenuItem(Long id, MenuItem menuItemDetails) {
         MenuItem menuItem = menuItemRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with ID: " + id));
 
         validateMenuItem(menuItemDetails);
 
@@ -119,7 +128,7 @@ public class MenuItemService {
 
     @Transactional
     public Map<String, Object> updateMenuItemInventory(String slug, Long menuItemId, InventoryUpdateRequestDTO inventoryUpdate) {
-        updateInventory(slug, inventoryUpdate);  // Existing logic moved here
+        updateInventory(slug, inventoryUpdate);
         return Map.of(
                 "message", "Inventory updated successfully.",
                 "menuItemId", menuItemId,
@@ -150,12 +159,11 @@ public class MenuItemService {
         if (menuItem.getName() == null || menuItem.getName().trim().isEmpty()) {
             throw new ValidationException("Menu item name cannot be empty.");
         }
-        if (menuItem.getPrice() == null) { // ✅ This now works!
+        if (menuItem.getPrice() == null) {
             throw new ValidationException("Menu item price cannot be null.");
         }
         if (menuItem.getPrice() <= 0) {
             throw new ValidationException("Menu item price must be greater than 0.");
         }
     }
-
 }

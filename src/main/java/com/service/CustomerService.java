@@ -3,6 +3,8 @@ package com.service;
 import com.dto.CustomerOrderDTO;
 import com.dto.MenuItemDTO;
 import com.dto.OrderDTO;
+import com.exception.ResourceNotFoundException;
+import com.exception.ValidationException;
 import com.model.*;
 import com.repository.AppUserRepository;
 import com.repository.CustomerOrderRepository;
@@ -11,7 +13,6 @@ import com.repository.RestaurantRepository;
 import com.utils.ResponseUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
-
+import static com.utils.AuthUtils.getAuthenticatedUsername;
 import static com.utils.AuthUtils.getLoggedInUsername;
 
 /**
@@ -52,7 +53,7 @@ public class CustomerService {
      */
     public List<MenuItemDTO> getMenuByRestaurantSlug(String slug) {
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found for slug: " + slug));
 
         boolean includeInventory = isRestaurantEmployee();
 
@@ -77,27 +78,27 @@ public class CustomerService {
     @Transactional
     public OrderDTO submitOrder(String slug, List<Map<String, Object>> orderItems) {
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found for slug: " + slug));
 
         AppUser customer = getAuthenticatedCustomer();
 
         if (customer.getAddress() == null) {
-            throw new RuntimeException("Customer address is required to place an order.");
+            throw new ValidationException("Customer address is required to place an order.");
         }
 
         List<OrderItem> createdOrderItems = new ArrayList<>();
         double totalPrice = 0;
-        StringBuilder itemsDescription = new StringBuilder(); // ✅ String to store ordered items
+        StringBuilder itemsDescription = new StringBuilder();
 
         for (Map<String, Object> item : orderItems) {
             Long menuItemId = ((Number) item.get("menuItemId")).longValue();
             Integer quantity = ((Number) item.get("quantity")).intValue();
 
             MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                    .orElseThrow(() -> new RuntimeException("Menu item not found with ID: " + menuItemId));
+                    .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with ID: " + menuItemId));
 
             if (menuItem.getInventory() < quantity) {
-                throw new RuntimeException("Not enough stock for item: " + menuItem.getName());
+                throw new ValidationException("Not enough stock for item: " + menuItem.getName());
             }
 
             menuItem.reduceInventory(quantity);
@@ -107,11 +108,7 @@ public class CustomerService {
             createdOrderItems.add(orderItem);
             totalPrice += orderItem.getTotalPrice();
 
-            // ✅ Append item details to the description
-            itemsDescription.append(quantity)
-                    .append("x ")
-                    .append(menuItem.getName())
-                    .append(", ");
+            itemsDescription.append(quantity).append("x ").append(menuItem.getName()).append(", ");
         }
 
         Address managedAddress = entityManager.merge(customer.getAddress());
@@ -119,7 +116,6 @@ public class CustomerService {
         createdOrderItems.forEach(item -> item.setOrderNumber(order.getOrderNumber()));
         customerOrderRepository.save(order);
 
-        // ✅ Remove the last comma and space if there are items
         String itemsSummary = itemsDescription.length() > 0
                 ? itemsDescription.substring(0, itemsDescription.length() - 2)
                 : "No items";
@@ -128,45 +124,29 @@ public class CustomerService {
                 order.getOrderNumber(),
                 order.getTotalPrice(),
                 order.getStatus(),
-                customer.getUsername(), // ✅ Username of the customer
-                itemsSummary // ✅ Now contains ordered items instead of null
+                customer.getUsername(),
+                itemsSummary
         );
-    }
-
-
-
-
-    /**
-     * Retrieves the username of the currently authenticated user.
-     *
-     * @return The username of the authenticated customer.
-     */
-    private String getAuthenticatedUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
     }
 
     /**
      * Retrieves the authenticated customer from the database.
-     *
-     * @return The authenticated AppUser entity.
      */
     private AppUser getAuthenticatedCustomer() {
         return appUserRepository.findByUsername(getAuthenticatedUsername())
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found."));
     }
 
     /**
      * Retrieves all orders for the authenticated customer.
-     *
-     * @return List of CustomerOrderDTOs representing the orders of the user.
      */
     @Transactional
     public List<CustomerOrderDTO> getAllOrdersForAuthenticatedUser() {
-        String username = getAuthenticatedUsername(); // Get logged-in user's username
-
+        String username = getAuthenticatedUsername();
         List<CustomerOrder> orders = customerOrderRepository.findByUser_Username(username);
+
         if (orders.isEmpty()) {
-            throw new RuntimeException("No orders found for user: " + username);
+            throw new ResourceNotFoundException("No orders found for user: " + username);
         }
 
         return orders.stream().map(CustomerOrderDTO::new).toList();
@@ -174,24 +154,20 @@ public class CustomerService {
 
     /**
      * Updates the status of an order (Customers can only cancel orders).
-     *
-     * @param orderNumber The unique order number.
-     * @param newStatus The requested status update (only "CANCELED" is allowed for customers).
-     * @return A confirmation message.
      */
     @Transactional
     public ResponseEntity<Map<String, String>> updateOrderStatus(String orderNumber, String newStatus) {
         return ResponseUtils.handleRequest(() -> {
             String username = getLoggedInUsername();
             CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderNumber, username)
-                    .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
+                    .orElseThrow(() -> new ResourceNotFoundException("Order not found or access denied"));
 
             if (!"CANCELED".equalsIgnoreCase(newStatus)) {
-                throw new RuntimeException("Customers can only cancel orders.");
+                throw new ValidationException("Customers can only cancel orders.");
             }
 
             if (order.getStatus() != OrderStatus.UNCONFIRMED) {
-                throw new RuntimeException("Order cannot be canceled in its current status.");
+                throw new ValidationException("Order cannot be canceled in its current status.");
             }
 
             order.setStatus(OrderStatus.CANCELED);
@@ -199,7 +175,6 @@ public class CustomerService {
             return Map.of("message", "Order successfully canceled.");
         });
     }
-
 
     /**
      * Retrieves a specific order for the authenticated user.
@@ -209,19 +184,17 @@ public class CustomerService {
             if (identifier.matches("\\d+")) { // Numeric order ID
                 return customerOrderRepository.findById(Long.parseLong(identifier))
                         .map(CustomerOrderDTO::new)
-                        .orElseThrow(() -> new RuntimeException("Order not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
             } else { // Alphanumeric order number
                 CustomerOrder order = customerOrderRepository.findByOrderNumber(identifier)
-                        .orElseThrow(() -> new RuntimeException("Order not found"));
+                        .orElseThrow(() -> new ResourceNotFoundException("Order not found"));
 
                 if (!order.getUser().getUsername().equals(username)) {
-                    throw new RuntimeException("Access denied.");
+                    throw new ValidationException("Access denied.");
                 }
 
                 return new CustomerOrderDTO(order);
             }
         });
     }
-
-
 }
