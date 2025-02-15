@@ -1,33 +1,38 @@
-// src/main/java/com/service/UserService.java
-
 package com.service;
 
+import com.exception.ResourceNotFoundException;
 import com.model.AppUser;
 import com.repository.AppUserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
-
+/**
+ * Service for handling user-related operations.
+ */
 @Service
 public class UserService {
 
-    @Autowired
-    private AppUserRepository userRepository;
+    private final AppUserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
+    /**
+     * Constructor-based Dependency Injection.
+     */
+    public UserService(AppUserRepository userRepository, PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     /**
      * Retrieve a user by their ID.
      *
      * @param id User ID.
-     * @return User if found, or empty Optional.
+     * @return User if found.
+     * @throws ResourceNotFoundException if user is not found.
      */
-    public Optional<AppUser> getUserById(Long id) {
-        return userRepository.findById(id);
+    public AppUser getUserById(Long id) {
+        return userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with ID: " + id));
     }
 
     /**
@@ -40,8 +45,6 @@ public class UserService {
         user.setPassword(passwordEncoder.encode(user.getPassword())); // Encrypt password
         return userRepository.save(user);
     }
-
-
 
     /**
      * Check if a username exists.
@@ -57,9 +60,11 @@ public class UserService {
      * Retrieve a user by their username.
      *
      * @param username Username to find.
-     * @return User if found, or empty Optional.
+     * @return User if found.
+     * @throws ResourceNotFoundException if user is not found.
      */
-    public Optional<AppUser> getUserByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public AppUser getUserByUsername(String username) {
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
     }
 }

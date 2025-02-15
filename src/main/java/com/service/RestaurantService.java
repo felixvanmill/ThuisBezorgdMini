@@ -1,10 +1,10 @@
-// src/main/java/com/service/RestaurantService.java
-
 package com.service;
 
 import com.dto.CustomerOrderDTO;
 import com.dto.OrderDTO;
 import com.dto.RestaurantDTO;
+import com.exception.ResourceNotFoundException;
+import com.exception.ValidationException;
 import com.model.MenuItem;
 import com.model.CustomerOrder;
 import com.model.OrderStatus;
@@ -13,43 +13,34 @@ import com.repository.AppUserRepository;
 import com.repository.MenuItemRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.RestaurantRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
 import com.utils.CsvUtils;
+
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 public class RestaurantService {
 
-    @Autowired
-    private CustomerOrderRepository customerOrderRepository;
+    private final CustomerOrderRepository customerOrderRepository;
+    private final RestaurantRepository restaurantRepository;
+    private final MenuItemRepository menuItemRepository;
+    private final AppUserRepository appUserRepository;
 
-    @Autowired
-    private RestaurantRepository restaurantRepository;
-
-    @Autowired
-    private MenuItemRepository menuItemRepository;
-
-    @Autowired
-    private AppUserRepository appUserRepository;
-
-
-    /**
-     * Get a restaurant by ID.
-     */
-    @Transactional(readOnly = true)
-    public Optional<Restaurant> getRestaurantById(Long id) {
-        return restaurantRepository.findById(id);
+    public RestaurantService(CustomerOrderRepository customerOrderRepository,
+                             RestaurantRepository restaurantRepository,
+                             MenuItemRepository menuItemRepository,
+                             AppUserRepository appUserRepository) {
+        this.customerOrderRepository = customerOrderRepository;
+        this.restaurantRepository = restaurantRepository;
+        this.menuItemRepository = menuItemRepository;
+        this.appUserRepository = appUserRepository;
     }
-
 
     /**
      * Get all restaurants with menu items (excluding inventory).
@@ -63,17 +54,6 @@ public class RestaurantService {
                 })
                 .collect(Collectors.toList());
     }
-
-
-    /**
-     * Get a restaurant by slug with its employees.
-     */
-    @Transactional(readOnly = true)
-    public Restaurant getRestaurantBySlugWithEmployees(String slug) {
-        return restaurantRepository.findBySlugWithEmployees(slug)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found with slug: " + slug));
-    }
-
 
     /**
      * Check if an employee is authorized for a restaurant.
@@ -90,16 +70,14 @@ public class RestaurantService {
     public List<RestaurantDTO> getRestaurantsForEmployee(String username) {
         Long restaurantId = getAuthenticatedRestaurantId(username);
         if (restaurantId == null) {
-            throw new RuntimeException("Employee is not associated with a restaurant.");
+            throw new ValidationException("Employee is not associated with a restaurant.");
         }
 
         Restaurant restaurant = restaurantRepository.findById(restaurantId)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found"));
 
         return List.of(new RestaurantDTO(restaurant, restaurant.getMenuItems(), true)); // Include inventory
     }
-
-
 
     private Long getAuthenticatedRestaurantId(String username) {
         return appUserRepository.findByUsername(username)
@@ -110,29 +88,29 @@ public class RestaurantService {
     @Transactional
     public ResponseEntity<?> updateOrderStatus(String username, String slug, String orderId, Map<String, String> requestBody) {
         if (!isEmployeeAuthorizedForRestaurant(username, slug)) {
-            return ResponseEntity.status(403).body(Map.of("error", "Unauthorized access"));
+            throw new ValidationException("Unauthorized access to restaurant: " + slug);
         }
 
         Restaurant restaurant = restaurantRepository.findBySlug(slug)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found for slug: " + slug));
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found for slug: " + slug));
 
         CustomerOrder order = customerOrderRepository.findByOrderNumber(orderId)
-                .orElseThrow(() -> new RuntimeException("Order not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + orderId));
 
         if (!order.getRestaurant().getId().equals(restaurant.getId())) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Order does not belong to this restaurant."));
+            throw new ValidationException("Order does not belong to this restaurant.");
         }
 
         String status = requestBody.get("status");
         if (status == null || status.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Status must be provided."));
+            throw new ValidationException("Status must be provided.");
         }
 
         try {
             OrderStatus orderStatus = OrderStatus.valueOf(status.toUpperCase());
             order.setStatus(orderStatus);
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Invalid status value."));
+            throw new ValidationException("Invalid order status value: " + status);
         }
 
         customerOrderRepository.save(order);
@@ -142,17 +120,17 @@ public class RestaurantService {
     @Transactional
     public ResponseEntity<?> updateMenuItemAvailability(String username, String slug, Long menuItemId, Map<String, Boolean> request) {
         if (!request.containsKey("isAvailable")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Missing 'isAvailable' field."));
+            throw new ValidationException("Missing 'isAvailable' field.");
         }
 
         boolean isAvailable = request.get("isAvailable");
 
         if (!isEmployeeAuthorizedForRestaurant(username, slug)) {
-            return ResponseEntity.status(403).body(Map.of("error", "Unauthorized access"));
+            throw new ValidationException("Unauthorized access to restaurant: " + slug);
         }
 
         MenuItem menuItem = menuItemRepository.findById(menuItemId)
-                .orElseThrow(() -> new RuntimeException("Menu item not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with ID: " + menuItemId));
 
         menuItem.setAvailable(isAvailable);
         menuItemRepository.save(menuItem);
@@ -166,17 +144,15 @@ public class RestaurantService {
         ));
     }
 
-
     @Transactional(readOnly = true)
     public ResponseEntity<byte[]> downloadOrdersAsCsv(String username) {
         Long restaurantId = getAuthenticatedRestaurantId(username);
         if (restaurantId == null) {
-            return ResponseEntity.badRequest().body(null);
+            throw new ValidationException("Employee is not associated with a restaurant.");
         }
 
         List<OrderDTO> orders = customerOrderRepository.findByRestaurant_IdWithDetails(restaurantId);
 
-        // Generate CSV content using CsvUtils (now includes fetching items)
         String csvContent = CsvUtils.generateCsvFromDTO(orders, customerOrderRepository);
         byte[] csvBytes = csvContent.getBytes(StandardCharsets.UTF_8);
 
@@ -189,19 +165,16 @@ public class RestaurantService {
 
     @Transactional(readOnly = true)
     public List<CustomerOrderDTO> getOrdersForEmployee(String slug, String username) {
-        // Fetch the restaurant where the employee works
         Restaurant restaurant = restaurantRepository.findBySlugWithEmployees(slug)
-                .orElseThrow(() -> new RuntimeException("Restaurant not found with slug: " + slug));
+                .orElseThrow(() -> new ResourceNotFoundException("Restaurant not found with slug: " + slug));
 
-        // Check if the employee is authorized
         boolean isEmployee = restaurant.getEmployees().stream()
                 .anyMatch(employee -> employee.getUsername().equals(username));
 
         if (!isEmployee) {
-            throw new RuntimeException("User is not an employee of the restaurant.");
+            throw new ValidationException("User is not an employee of the restaurant.");
         }
 
-        // Fetch and return orders as DTOs
         return customerOrderRepository.findByRestaurant_Id(restaurant.getId())
                 .stream().map(CustomerOrderDTO::new)
                 .collect(Collectors.toList());
@@ -220,7 +193,4 @@ public class RestaurantService {
                 .stream().map(CustomerOrderDTO::new)
                 .collect(Collectors.toList());
     }
-
-
-
 }
