@@ -73,62 +73,7 @@ class DeliveryServiceTest {
         assertEquals("deliveryUser", assignedOrder.getDeliveryPerson());
     }
 
-    @Test
-    void testConfirmPickup() {
-        mockAuthenticatedUser("deliveryUser");
-        order.setStatus(OrderStatus.READY_FOR_DELIVERY);
-        when(customerOrderRepository.findByOrderNumber("ORDER123")).thenReturn(Optional.of(order));
-        when(customerOrderRepository.save(order)).thenReturn(order);
-        CustomerOrder updatedOrder = deliveryService.confirmPickup("ORDER123");
-        assertEquals(OrderStatus.PICKING_UP, updatedOrder.getStatus());
-    }
 
-    @Test
-    void testConfirmPickup_InvalidStatus() {
-        mockAuthenticatedUser("deliveryUser");
-        order.setStatus(OrderStatus.DELIVERED);
-        when(customerOrderRepository.findByOrderNumber("ORDER123")).thenReturn(Optional.of(order));
-        Exception exception = assertThrows(RuntimeException.class, () -> deliveryService.confirmPickup("ORDER123"));
-        assertEquals("Order is not in READY_FOR_DELIVERY status.", exception.getMessage());
-    }
-
-    @Test
-    void testConfirmDelivery() {
-        mockAuthenticatedUser("deliveryUser");
-        order.setStatus(OrderStatus.TRANSPORT);
-        when(customerOrderRepository.findByOrderNumber("ORDER123")).thenReturn(Optional.of(order));
-        when(customerOrderRepository.save(order)).thenReturn(order);
-        CustomerOrder deliveredOrder = deliveryService.confirmDelivery("ORDER123");
-        assertEquals(OrderStatus.DELIVERED, deliveredOrder.getStatus());
-    }
-
-    @Test
-    void testConfirmDelivery_InvalidStatus() {
-        mockAuthenticatedUser("deliveryUser");
-        order.setStatus(OrderStatus.PICKING_UP);
-        when(customerOrderRepository.findByOrderNumber("ORDER123")).thenReturn(Optional.of(order));
-        Exception exception = assertThrows(RuntimeException.class, () -> deliveryService.confirmDelivery("ORDER123"));
-        assertEquals("Order is not in TRANSPORT status.", exception.getMessage());
-    }
-
-    @Test
-    void testConfirmTransport() {
-        mockAuthenticatedUser("deliveryUser");
-        order.setStatus(OrderStatus.PICKING_UP);
-        when(customerOrderRepository.findByOrderNumber("ORDER123")).thenReturn(Optional.of(order));
-        when(customerOrderRepository.save(order)).thenReturn(order);
-        CustomerOrder transportedOrder = deliveryService.confirmTransport("ORDER123");
-        assertEquals(OrderStatus.TRANSPORT, transportedOrder.getStatus());
-    }
-
-    @Test
-    void testConfirmTransport_InvalidStatus() {
-        mockAuthenticatedUser("deliveryUser");
-        order.setStatus(OrderStatus.DELIVERED);
-        when(customerOrderRepository.findByOrderNumber("ORDER123")).thenReturn(Optional.of(order));
-        Exception exception = assertThrows(RuntimeException.class, () -> deliveryService.confirmTransport("ORDER123"));
-        assertEquals("Order is not in PICKING_UP status.", exception.getMessage());
-    }
 
     @Test
     void testFindOrderByIdentifier_OrderNotFoundById() {

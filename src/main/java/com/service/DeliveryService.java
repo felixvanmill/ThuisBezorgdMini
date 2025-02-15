@@ -56,65 +56,7 @@ public class DeliveryService {
         return customerOrderRepository.save(order);
     }
 
-    /**
-     * Confirms that the delivery person has picked up the order.
-     *
-     * @param identifier The order ID or order number.
-     * @return The updated order with status set to PICKING_UP.
-     * @throws RuntimeException if the order is not in READY_FOR_DELIVERY status.
-     */
-    @Transactional
-    public CustomerOrder confirmPickup(String identifier) {
-        CustomerOrder order = findOrderByIdentifier(identifier);
-        validateDeliveryPerson(order);
 
-        if (order.getStatus() != OrderStatus.READY_FOR_DELIVERY) {
-            throw new RuntimeException("Order is not in READY_FOR_DELIVERY status.");
-        }
-
-        order.setStatus(OrderStatus.PICKING_UP);
-        return customerOrderRepository.save(order);
-    }
-
-    /**
-     * Confirms the delivery of an order.
-     *
-     * @param identifier The order ID or order number.
-     * @return The updated order with status set to DELIVERED.
-     * @throws RuntimeException if the order is not in TRANSPORT status.
-     */
-    @Transactional
-    public CustomerOrder confirmDelivery(String identifier) {
-        CustomerOrder order = findOrderByIdentifier(identifier);
-        validateDeliveryPerson(order);
-
-        if (order.getStatus() != OrderStatus.TRANSPORT) {
-            throw new RuntimeException("Order is not in TRANSPORT status.");
-        }
-
-        order.setStatus(OrderStatus.DELIVERED);
-        return customerOrderRepository.save(order);
-    }
-
-    /**
-     * Marks an order as being transported.
-     *
-     * @param identifier The order ID or order number.
-     * @return The updated order with status set to TRANSPORT.
-     * @throws RuntimeException if the order is not in PICKING_UP status.
-     */
-    @Transactional
-    public CustomerOrder confirmTransport(String identifier) {
-        CustomerOrder order = findOrderByIdentifier(identifier);
-        validateDeliveryPerson(order);
-
-        if (order.getStatus() != OrderStatus.PICKING_UP) {
-            throw new RuntimeException("Order is not in PICKING_UP status.");
-        }
-
-        order.setStatus(OrderStatus.TRANSPORT);
-        return customerOrderRepository.save(order);
-    }
 
     /**
      * Retrieves the orders assigned to the currently logged-in delivery person.
