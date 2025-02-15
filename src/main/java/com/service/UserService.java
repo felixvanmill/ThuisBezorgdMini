@@ -8,7 +8,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -20,14 +19,6 @@ public class UserService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    /**
-     * Retrieve all users.
-     *
-     * @return List of all users.
-     */
-    public List<AppUser> getAllUsers() {
-        return userRepository.findAll();
-    }
 
     /**
      * Retrieve a user by their ID.
@@ -50,36 +41,7 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    /**
-     * Update an existing user's details.
-     *
-     * @param id          User ID to update.
-     * @param userDetails New details for the user.
-     * @return Updated user if found, or empty Optional.
-     */
-    public Optional<AppUser> updateUser(Long id, AppUser userDetails) {
-        return userRepository.findById(id).map(existingUser -> {
-            existingUser.setUsername(userDetails.getUsername());
-            existingUser.setPassword(passwordEncoder.encode(userDetails.getPassword())); // Encrypt password
-            existingUser.setRole(userDetails.getRole());
-            existingUser.setFullName(userDetails.getFullName());
-            return userRepository.save(existingUser);
-        });
-    }
 
-    /**
-     * Delete a user by their ID.
-     *
-     * @param id User ID to delete.
-     * @return True if deleted, false if not found.
-     */
-    public boolean deleteUser(Long id) {
-        if (userRepository.existsById(id)) {
-            userRepository.deleteById(id);
-            return true;
-        }
-        return false;
-    }
 
     /**
      * Check if a username exists.

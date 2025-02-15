@@ -22,7 +22,7 @@ import java.util.Optional;
  * Handles authentication and user registration.
  */
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("/api/v1/auth")
 public class AuthController {
 
     @Autowired
