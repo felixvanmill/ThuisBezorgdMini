@@ -2,25 +2,23 @@
 
 package com.service;
 
-import com.dto.InventoryUpdateRequest;
+import com.dto.InventoryUpdateRequestDTO;
 import com.exception.ResourceNotFoundException;
 import com.model.AppUser;
 import com.model.MenuItem;
 import com.repository.AppUserRepository;
 import com.repository.MenuItemRepository;
-import org.apache.commons.csv.CSVFormat;
-import org.apache.commons.csv.CSVParser;
-import org.apache.commons.csv.CSVRecord;
+import com.utils.AuthUtils;
+import com.utils.CsvUtils;
+import com.utils.FileUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.transaction.Transactional;
-import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
+
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -57,23 +55,18 @@ public class MenuItemService {
      * Update inventory for menu items in a specific restaurant.
      */
     @Transactional
-    public void updateInventory(String slug, List<InventoryUpdateRequest> inventoryUpdates) {
-        for (InventoryUpdateRequest request : inventoryUpdates) {
-            MenuItem menuItem = menuItemRepository.findById(request.getMenuItemId())
-                    .orElseThrow(() -> new ResourceNotFoundException("MenuItem not found with ID: " + request.getMenuItemId()));
+    public void updateInventory(String slug, InventoryUpdateRequestDTO inventoryUpdate) {
+        MenuItem menuItem = menuItemRepository.findById(inventoryUpdate.getMenuItemId())
+                .orElseThrow(() -> new ResourceNotFoundException("MenuItem not found with ID: " + inventoryUpdate.getMenuItemId()));
 
-            if (!menuItem.getRestaurant().getSlug().equals(slug)) {
-                throw new IllegalArgumentException("MenuItem does not belong to the restaurant with slug: " + slug);
-            }
-
-            menuItem.setInventory(menuItem.getInventory() + request.getQuantity());
-            if (menuItem.getInventory() < 0) {
-                throw new IllegalArgumentException("Inventory cannot be negative for MenuItem ID: " + menuItem.getId());
-            }
-
-            menuItemRepository.save(menuItem);
+        if (!menuItem.getRestaurant().getSlug().equals(slug)) {
+            throw new IllegalArgumentException("MenuItem does not belong to restaurant: " + slug);
         }
+
+        menuItem.setInventory(inventoryUpdate.getQuantity());
+        menuItemRepository.save(menuItem);
     }
+
 
     /**
      * Update a menu item.
@@ -99,78 +92,11 @@ public class MenuItemService {
         menuItemRepository.deleteById(id);
     }
 
-    /**
-     * Process and import menu items from a CSV file.
-     */
-    public List<String> processMenuCSV(MultipartFile file) {
-        List<String> errorMessages = new ArrayList<>();
 
-        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {
-            CSVParser parser = new CSVParser(reader,
-                    CSVFormat.DEFAULT.builder()
-                            .setHeader()
-                            .setSkipHeaderRecord(true)
-                            .build());
-
-            // ✅ Controleer correct of de header "name" bestaat
-            if (!parser.getHeaderMap().containsKey("name")) {
-                errorMessages.add("CSV is missing the 'name' column.");
-                return errorMessages; // **Fix: Stop verwerking en retourneer fout**
-            }
-
-            for (CSVRecord record : parser) {
-                try {
-                    String name = "";
-                    if (record.isMapped("name")) {
-                        name = record.get("name");
-                        if (name == null) {
-                            name = "";
-                        }
-                    }
-
-                    if (name.isBlank()) {
-                        errorMessages.add("Row " + record.getRecordNumber() + ": Missing or empty 'name' field.");
-                        continue;
-                    }
-
-
-
-                    String description = record.isMapped("description") ? record.get("description") : "No description provided";
-                    String priceStr = record.isMapped("price") ? record.get("price") : "0.0";
-                    String inventoryStr = record.isMapped("inventory") ? record.get("inventory") : "0";
-
-                    double price = !priceStr.isBlank() ? Double.parseDouble(priceStr) : 0.0;
-                    int inventory = !inventoryStr.isBlank() ? Integer.parseInt(inventoryStr) : 0;
-
-                    String itemId = record.isMapped("id") ? record.get("id") : null;
-
-                    MenuItem menuItem;
-                    if (itemId != null && !itemId.isBlank()) {
-                        menuItem = menuItemRepository.findById(Long.parseLong(itemId)).orElse(new MenuItem());
-                    } else {
-                        menuItem = new MenuItem();
-                    }
-
-                    menuItem.setName(name);
-                    menuItem.setDescription(description);
-                    menuItem.setPrice(price);
-                    menuItem.setInventory(inventory);
-
-                    menuItemRepository.save(menuItem);
-                } catch (Exception e) {
-                    System.out.println("DEBUG ERROR: " + e.getMessage());
-                    errorMessages.add("Row " + record.getRecordNumber() + ": " + e.getMessage());
-                }
-            }
-        } catch (Exception e) {
-            System.out.println("DEBUG FILE ERROR: " + e.getMessage());
-            errorMessages.add("Failed to process file: " + e.getMessage());
-        }
-
-        return errorMessages;
+    @Transactional
+    public List<String> processCsvFile(MultipartFile file, Long restaurantId) {
+        return CsvUtils.processMenuCsvFile(file, restaurantId, this);
     }
-
-
 
 
     /**
@@ -186,4 +112,31 @@ public class MenuItemService {
 
         return user.getRestaurant().getId();
     }
+
+    @Transactional
+    public Map<String, Object> updateMenuItemInventory(String slug, Long menuItemId, InventoryUpdateRequestDTO inventoryUpdate) {
+        updateInventory(slug, inventoryUpdate);  // Existing logic moved here
+        return Map.of(
+                "message", "Inventory updated successfully.",
+                "menuItemId", menuItemId,
+                "newInventory", inventoryUpdate.getQuantity()
+        );
+    }
+
+    @Transactional
+    public Map<String, Object> handleCsvUpload(MultipartFile file) {
+        FileUtils.validateCsvFile(file);
+        String username = AuthUtils.getLoggedInUsername();
+        Long restaurantId = getRestaurantIdForUser(username);
+        List<String> errorMessages = processCsvFile(file, restaurantId);
+
+        if (!errorMessages.isEmpty()) {
+            return Map.of(
+                    "message", "Menu update partially successful. Some records failed.",
+                    "errors", errorMessages
+            );
+        }
+        return Map.of("message", "Menu updated successfully!");
+    }
+
 }

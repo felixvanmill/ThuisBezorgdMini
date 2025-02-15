@@ -1,8 +1,9 @@
 package com.controller;
 
 import com.dto.CustomerOrderDTO;
-import com.model.CustomerOrder;
 import com.service.DeliveryService;
+import com.utils.ResponseUtils;
+import com.utils.ValidationUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -14,15 +15,13 @@ import java.util.Map;
  * Handles delivery-related operations such as viewing, managing, and confirming orders.
  */
 @RestController
-@RequestMapping("/delivery")
+@RequestMapping("/api/v1/delivery")
 public class DeliveryController {
 
     private final DeliveryService deliveryService;
 
     /**
      * Constructor-based Dependency Injection for DeliveryService.
-     *
-     * @param deliveryService The service handling delivery-related operations.
      */
     public DeliveryController(DeliveryService deliveryService) {
         this.deliveryService = deliveryService;
@@ -30,109 +29,68 @@ public class DeliveryController {
 
     /**
      * Retrieves all orders relevant to delivery personnel.
-     *
-     * @return A response containing a list of available orders for delivery.
      */
-    @GetMapping("/allOrders")
-    public ResponseEntity<?> getAllOrders() {
-        List<CustomerOrderDTO> orders = deliveryService.getAllDeliveryOrders();
-        return ResponseEntity.ok(Map.of("orders", orders));
+    @GetMapping("/orders")
+    public ResponseEntity<Map<String, List<CustomerOrderDTO>>> getAllOrders() {
+        return ResponseEntity.ok(Map.of("orders", deliveryService.getAllDeliveryOrders()));
     }
 
     /**
      * Assigns the logged-in delivery person to an order.
-     *
-     * @param identifier The order ID or order number.
-     * @return A response confirming that the delivery person has been assigned.
      */
     @PostMapping("/orders/{identifier}/assign")
-    public ResponseEntity<?> assignDeliveryPerson(@PathVariable String identifier) {
-        CustomerOrder order = deliveryService.assignOrder(identifier);
-        return ResponseEntity.ok(Map.of(
-                "message", "Delivery person assigned successfully.",
-                "orderId", order.getId()
-        ));
+    public ResponseEntity<Map<String, Object>> assignDeliveryPerson(@PathVariable String identifier) {
+        return ResponseUtils.handleRequest(() -> deliveryService.assignOrder(identifier)); // ✅ Now matches new return type
     }
 
-    /**
-     * Confirms that the logged-in delivery person has picked up the order.
-     *
-     * @param identifier The order ID or order number.
-     * @return A response confirming that the order is now in PICKING_UP status.
-     */
-    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
-    @PostMapping("/orders/{identifier}/confirmPickup")
-    public ResponseEntity<?> confirmPickup(@PathVariable String identifier) {
-        CustomerOrder order = deliveryService.confirmPickup(identifier);
-        return ResponseEntity.ok(Map.of(
-                "message", "Pickup confirmed. Order is now in PICKING_UP status.",
-                "orderId", order.getId()
-        ));
-    }
-
-    /**
-     * Confirms that an order has been delivered.
-     *
-     * @param identifier The order ID or order number.
-     * @return A response confirming that the order has been marked as DELIVERED.
-     */
-    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
-    @PostMapping("/orders/{identifier}/confirmDelivery")
-    public ResponseEntity<?> confirmDelivery(@PathVariable String identifier) {
-        CustomerOrder order = deliveryService.confirmDelivery(identifier);
-        return ResponseEntity.ok(Map.of(
-                "message", "Delivery confirmed. Order is now DELIVERED.",
-                "orderId", order.getId()
-        ));
-    }
-
-    /**
-     * Marks an order as 'In Transport'.
-     *
-     * @param identifier The order ID or order number.
-     * @return A response confirming that the order is now in TRANSPORT status.
-     */
-    @PostMapping("/orders/{identifier}/confirmTransport")
-    public ResponseEntity<?> confirmTransport(@PathVariable String identifier) {
-        CustomerOrder order = deliveryService.confirmTransport(identifier);
-        return ResponseEntity.ok(Map.of(
-                "message", "Order is now in TRANSPORT.",
-                "orderId", order.getId()
-        ));
-    }
 
     /**
      * Retrieves orders assigned to the logged-in delivery person.
-     *
-     * @return A response containing a list of assigned orders.
      */
     @GetMapping("/myOrders")
-    public ResponseEntity<?> getAssignedOrders() {
-        List<CustomerOrderDTO> orders = deliveryService.getAssignedOrders();
-        return ResponseEntity.ok(Map.of("orders", orders));
+    public ResponseEntity<Map<String, List<CustomerOrderDTO>>> getAssignedOrders() {
+        return ResponseEntity.ok(Map.of("orders", deliveryService.getAssignedOrders()));
     }
 
     /**
      * Retrieves the delivery history for the logged-in delivery person.
-     *
-     * @return A response containing a list of completed deliveries.
      */
     @GetMapping("/history")
-    public ResponseEntity<?> getDeliveryHistory() {
-        List<CustomerOrderDTO> deliveredOrders = deliveryService.getDeliveryHistory();
-        return ResponseEntity.ok(Map.of("deliveredOrders", deliveredOrders));
+    public ResponseEntity<Map<String, List<CustomerOrderDTO>>> getDeliveryHistory() {
+        return ResponseEntity.ok(Map.of("deliveredOrders", deliveryService.getDeliveryHistory()));
     }
 
     /**
      * Retrieves details of a specific order.
-     *
-     * @param identifier The order ID or order number.
-     * @return A response containing detailed order information.
      */
-    @GetMapping("/orders/{orderNumber}/details")
-    public ResponseEntity<CustomerOrderDTO> getOrderDetails(@PathVariable String orderNumber) {
-        CustomerOrderDTO order = deliveryService.getOrderDetails(orderNumber);
-        return ResponseEntity.ok(order);
+    @GetMapping("/orders/{identifier}/details")
+    public ResponseEntity<CustomerOrderDTO> getOrderDetails(@PathVariable String identifier) {
+        return ResponseUtils.handleRequest(() -> deliveryService.getOrderDetails(identifier));
     }
+
+    /**
+     * Updates the order status (e.g., Confirm Pickup, Transport, Delivered)
+     */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
+    @PatchMapping("/orders/{identifier}/status")
+    public ResponseEntity<Map<String, Object>> updateOrderStatus(
+            @PathVariable String identifier,
+            @RequestBody Map<String, String> requestBody) {
+
+        return ResponseUtils.handleRequest(() -> deliveryService.processOrderStatusUpdate(identifier, requestBody));
+    }
+
+    /**
+     * Retrieves the menu items for a specific order along with quantities.
+     */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
+    @GetMapping("/orders/{identifier}/items")
+    public ResponseEntity<Map<String, Object>> getOrderItems(@PathVariable String identifier) {
+        return ResponseUtils.handleRequest(() -> Map.of(
+                "orderItems", deliveryService.getOrderItems(identifier)
+        ));
+    }
+
+
 
 }

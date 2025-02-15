@@ -1,6 +1,9 @@
 package com.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.annotations.BatchSize;
+
 import java.util.List;
 
 /**
