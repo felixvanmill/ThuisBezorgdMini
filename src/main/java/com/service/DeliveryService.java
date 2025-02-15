@@ -1,6 +1,8 @@
 package com.service;
 
 import com.dto.CustomerOrderDTO;
+import com.exception.ResourceNotFoundException;
+import com.exception.ValidationException;
 import com.model.CustomerOrder;
 import com.model.OrderStatus;
 import com.repository.CustomerOrderRepository;
@@ -24,7 +26,6 @@ import java.util.stream.Collectors;
 public class DeliveryService {
     private static final Logger logger = LoggerFactory.getLogger(DeliveryService.class);
 
-
     private final CustomerOrderRepository customerOrderRepository;
 
     /**
@@ -38,9 +39,13 @@ public class DeliveryService {
      * Retrieves all orders relevant to delivery personnel.
      */
     public List<CustomerOrderDTO> getAllDeliveryOrders() {
-        return customerOrderRepository.findByStatusesWithDetails(OrderUtils.getActiveDeliveryStatuses())
-                .stream().map(CustomerOrderDTO::new)
-                .collect(Collectors.toList());
+        List<CustomerOrder> orders = customerOrderRepository.findByStatusesWithDetails(OrderUtils.getActiveDeliveryStatuses());
+
+        if (orders.isEmpty()) {
+            logger.info("No active delivery orders found.");
+        }
+
+        return orders.stream().map(CustomerOrderDTO::new).collect(Collectors.toList());
     }
 
     /**
@@ -48,9 +53,18 @@ public class DeliveryService {
      */
     @Transactional
     public Map<String, Object> assignOrder(String identifier) {
+        String loggedInUser = AuthUtils.getAuthenticatedUsername();
+        if (loggedInUser == null) {
+            throw new ValidationException("User must be authenticated to assign an order.");
+        }
+
         CustomerOrder order = OrderUtils.findOrderByIdentifier(customerOrderRepository, identifier);
-        order.setDeliveryPerson(AuthUtils.getAuthenticatedUsername());
+
+
+        order.setDeliveryPerson(loggedInUser);
         customerOrderRepository.save(order);
+
+        logger.info("Order {} assigned to {}", identifier, loggedInUser);
 
         return Map.of(
                 "message", "Delivery person assigned successfully.",
@@ -63,11 +77,11 @@ public class DeliveryService {
      */
     public List<CustomerOrderDTO> getAssignedOrders() {
         String loggedInUser = AuthUtils.getAuthenticatedUsername();
+        if (loggedInUser == null) {
+            throw new ValidationException("User must be authenticated to fetch assigned orders.");
+        }
+
         List<OrderStatus> statuses = OrderUtils.getInProgressStatuses();
-
-        logger.info("Fetching assigned orders for delivery person: {}", loggedInUser);
-        logger.info("Filtering by statuses: {}", statuses);
-
         List<CustomerOrder> assignedOrders = customerOrderRepository.findByDeliveryPersonAndStatuses(loggedInUser, statuses);
 
         if (assignedOrders.isEmpty()) {
@@ -83,11 +97,18 @@ public class DeliveryService {
      * Retrieves the delivery history for the logged-in delivery person.
      */
     public List<CustomerOrderDTO> getDeliveryHistory() {
-        return customerOrderRepository.findByDeliveryPersonAndStatuses(
-                        AuthUtils.getAuthenticatedUsername(),
-                        List.of(OrderStatus.DELIVERED))
-                .stream().map(CustomerOrderDTO::new)
-                .collect(Collectors.toList());
+        String loggedInUser = AuthUtils.getAuthenticatedUsername();
+        if (loggedInUser == null) {
+            throw new ValidationException("User must be authenticated to fetch delivery history.");
+        }
+
+        List<CustomerOrder> history = customerOrderRepository.findByDeliveryPersonAndStatuses(loggedInUser, List.of(OrderStatus.DELIVERED));
+
+        if (history.isEmpty()) {
+            logger.info("No delivery history found for {}", loggedInUser);
+        }
+
+        return history.stream().map(CustomerOrderDTO::new).collect(Collectors.toList());
     }
 
     /**
@@ -95,8 +116,15 @@ public class DeliveryService {
      */
     @Transactional(readOnly = true)
     public CustomerOrderDTO getOrderDetails(String identifier) {
+        String loggedInUser = AuthUtils.getAuthenticatedUsername();
+        if (loggedInUser == null) {
+            throw new ValidationException("User must be authenticated to view order details.");
+        }
+
         CustomerOrder order = OrderUtils.findOrderByIdentifier(customerOrderRepository, identifier);
-        ValidationUtils.validateDeliveryPerson(order, AuthUtils.getAuthenticatedUsername());
+
+
+        ValidationUtils.validateDeliveryPerson(order, loggedInUser);
         return new CustomerOrderDTO(order);
     }
 
@@ -114,8 +142,13 @@ public class DeliveryService {
      */
     @Transactional
     public Map<String, Object> updateOrderStatus(String identifier, String status) {
-        CustomerOrder order = OrderUtils.findOrderByIdentifier(customerOrderRepository, identifier);
         String loggedInUser = AuthUtils.getAuthenticatedUsername();
+        if (loggedInUser == null) {
+            throw new ValidationException("User must be authenticated to update order status.");
+        }
+
+        CustomerOrder order = OrderUtils.findOrderByIdentifier(customerOrderRepository, identifier);
+
 
         ValidationUtils.validateDeliveryPerson(order, loggedInUser);
         OrderStatus newStatus = ValidationUtils.parseOrderStatus(status);
@@ -123,6 +156,8 @@ public class DeliveryService {
 
         order.setStatus(newStatus);
         customerOrderRepository.save(order);
+
+        logger.info("Order {} updated to status {}", identifier, newStatus);
 
         return Map.of(
                 "message", "Order status updated successfully.",
@@ -136,18 +171,23 @@ public class DeliveryService {
      */
     @Transactional(readOnly = true)
     public List<Map<String, Object>> getOrderItems(String identifier) {
-        CustomerOrder order = OrderUtils.findOrderWithItems(customerOrderRepository, identifier);
-        ValidationUtils.validateDeliveryPerson(order, AuthUtils.getAuthenticatedUsername());
+        String loggedInUser = AuthUtils.getAuthenticatedUsername();
+        if (loggedInUser == null) {
+            throw new ValidationException("User must be authenticated to view order items.");
+        }
+
+        CustomerOrder order = OrderUtils.findOrderByIdentifier(customerOrderRepository, identifier);
+
+
+        ValidationUtils.validateDeliveryPerson(order, loggedInUser);
 
         return order.getOrderItems().stream()
                 .map(orderItem -> {
-                    Map<String, Object> item = new HashMap<>(); // ✅ Correct type enforcement
+                    Map<String, Object> item = new HashMap<>();
                     item.put("menuItemName", orderItem.getMenuItem().getName());
                     item.put("quantity", orderItem.getQuantity());
                     return item;
                 })
                 .collect(Collectors.toList());
     }
-
-
 }

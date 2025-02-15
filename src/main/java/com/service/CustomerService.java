@@ -3,7 +3,6 @@ package com.service;
 import com.dto.CustomerOrderDTO;
 import com.dto.MenuItemDTO;
 import com.dto.OrderDTO;
-import com.dto.RestaurantDTO;
 import com.model.*;
 import com.repository.AppUserRepository;
 import com.repository.CustomerOrderRepository;
@@ -12,14 +11,14 @@ import com.repository.RestaurantRepository;
 import com.utils.ResponseUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
-import org.hibernate.Hibernate;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
-import java.util.stream.Collectors;
+
 
 import static com.utils.AuthUtils.getLoggedInUsername;
 
@@ -135,61 +134,6 @@ public class CustomerService {
     }
 
 
-
-    /**
-     * Retrieves order details based on the order number.
-     *
-     * @param orderId The unique order identifier.
-     * @return The corresponding customer order.
-     */
-    @Transactional
-    public CustomerOrderDTO trackOrder(String orderId) {
-        String username = getAuthenticatedUsername();
-        CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderId, username)
-                .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
-
-        Hibernate.initialize(order.getUser());
-        Hibernate.initialize(order.getUser().getAddress());
-
-        return new CustomerOrderDTO(order);
-    }
-
-    /**
-     * Cancels an order if it is still in the "UNCONFIRMED" status.
-     *
-     * @param orderNumber The unique order number.
-     * @return A confirmation message.
-     */
-    @Transactional
-    public Map<String, String> cancelOrder(String orderNumber) {
-        String username = getAuthenticatedUsername();
-        CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderNumber, username)
-                .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
-
-        if (order.getStatus() != OrderStatus.UNCONFIRMED) {
-            throw new RuntimeException("Order cannot be canceled in its current status.");
-        }
-
-        order.setStatus(OrderStatus.CANCELED);
-        customerOrderRepository.save(order);
-
-        return Map.of("message", "Order successfully canceled.");
-    }
-
-    /**
-     * Retrieves a list of all restaurants, including their menu items.
-     */
-    @Transactional(readOnly = true)
-    public List<RestaurantDTO> getAllRestaurants() {
-        boolean includeInventory = isRestaurantEmployee();
-
-        List<Restaurant> restaurants = restaurantRepository.findAll();  // Fetch all restaurants
-        restaurants.forEach(restaurant -> Hibernate.initialize(restaurant.getMenuItems())); // Ensure menu items are loaded
-
-        return restaurants.stream()
-                .map(restaurant -> new RestaurantDTO(restaurant, restaurant.getMenuItems(), includeInventory))
-                .collect(Collectors.toList());
-    }
 
 
     /**
