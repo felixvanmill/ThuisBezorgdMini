@@ -1,20 +1,18 @@
 package com.controller;
 
 import com.dto.CustomerOrderDTO;
-import com.dto.MenuItemDTO;
 import com.dto.OrderDTO;
-import com.dto.RestaurantDTO;
-import com.model.CustomerOrder;
 import com.service.CustomerService;
 import com.service.OrderService;
+import com.utils.ResponseUtils;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import com.utils.AuthUtils;
 
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
+
 
 /**
  * Handles customer-related operations, including viewing restaurant menus,
@@ -53,7 +51,6 @@ public class CustomerController {
     public ResponseEntity<OrderDTO> submitOrder(
             @PathVariable String slug,
             @RequestBody List<Map<String, Object>> orderItems) {
-
         return ResponseEntity.ok(customerService.submitOrder(slug, orderItems));
     }
 
@@ -61,8 +58,6 @@ public class CustomerController {
 
     /**
      * Retrieves all orders for the authenticated customer.
-     *
-     * New: `GET /api/v1/orders`
      */
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     @GetMapping("/orders")
@@ -80,41 +75,18 @@ public class CustomerController {
     public ResponseEntity<Map<String, String>> updateOrderStatus(
             @PathVariable String orderNumber,
             @RequestBody Map<String, String> requestBody) {
-
-        String newStatus = requestBody.get("status");
-
-        if (newStatus == null || newStatus.isBlank()) {
-            return ResponseEntity.badRequest().body(Map.of("error", "Status must be provided."));
-        }
-
-        return ResponseEntity.ok(customerService.updateOrderStatus(orderNumber, newStatus));
+        return customerService.updateOrderStatus(orderNumber, requestBody.get("status"));
     }
 
 
-    private String getAuthenticatedUsername() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
 
+    /**
+     * Retrieves a specific order for the authenticated user.
+     */
     @PreAuthorize("hasRole('ROLE_CUSTOMER')")
     @GetMapping("/orders/{identifier}")
-    public ResponseEntity<?> getOrderByIdentifier(@RequestParam(required = false) String username,
-                                                  @PathVariable String identifier) {
-        try {
-            String loggedInUser = getAuthenticatedUsername();
-
-            if (username != null && !loggedInUser.equals(username)) {
-                return ResponseEntity.status(403).body(Map.of("error", "Access denied."));
-            }
-
-            CustomerOrder order = identifier.matches("\\d+")
-                    ? orderService.getOrderById(Long.parseLong(identifier)) // Numeric order ID
-                    : orderService.getOrderForCustomerByOrderNumber(loggedInUser, identifier); // Alphanumeric order number
-
-            return ResponseEntity.ok(new CustomerOrderDTO(order));
-        } catch (Exception e) {
-            return ResponseEntity.status(404).body(Map.of("error", e.getMessage()));
-        }
+    public ResponseEntity<CustomerOrderDTO> getOrderByIdentifier(@PathVariable String identifier) {
+        return customerService.getOrderByIdentifier(AuthUtils.getLoggedInUsername(), identifier);
     }
-
 
 }

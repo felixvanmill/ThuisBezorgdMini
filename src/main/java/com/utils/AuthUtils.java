@@ -33,5 +33,9 @@ public class AuthUtils {
                 .orElse(null);
     }
 
+    private String getAuthenticatedUsername() {
+        return SecurityContextHolder.getContext().getAuthentication().getName();
+    }
+
 
 }

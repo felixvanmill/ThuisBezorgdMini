@@ -9,15 +9,19 @@ import com.repository.AppUserRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.MenuItemRepository;
 import com.repository.RestaurantRepository;
+import com.utils.ResponseUtils;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.hibernate.Hibernate;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
+
+import static com.utils.AuthUtils.getLoggedInUsername;
 
 /**
  * Handles customer-related operations such as retrieving menus, placing orders, and tracking orders.
@@ -70,10 +74,6 @@ public class CustomerService {
 
     /**
      * Places an order for a given restaurant.
-     *
-     * @param slug               The restaurant's unique slug.
-     * @param menuItemQuantities A map containing menu item IDs and their respective quantities.
-     * @return A Map containing order details.
      */
     @Transactional
     public OrderDTO submitOrder(String slug, List<Map<String, Object>> orderItems) {
@@ -236,26 +236,47 @@ public class CustomerService {
      * @return A confirmation message.
      */
     @Transactional
-    public Map<String, String> updateOrderStatus(String orderNumber, String newStatus) {
-        String username = getAuthenticatedUsername();
+    public ResponseEntity<Map<String, String>> updateOrderStatus(String orderNumber, String newStatus) {
+        return ResponseUtils.handleRequest(() -> {
+            String username = getLoggedInUsername();
+            CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderNumber, username)
+                    .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
 
-        CustomerOrder order = customerOrderRepository.findByOrderNumberAndUser_Username(orderNumber, username)
-                .orElseThrow(() -> new RuntimeException("Order not found or access denied"));
+            if (!"CANCELED".equalsIgnoreCase(newStatus)) {
+                throw new RuntimeException("Customers can only cancel orders.");
+            }
 
-        // Ensure only "CANCELED" status can be set by customers
-        if (!newStatus.equalsIgnoreCase("CANCELED")) {
-            throw new RuntimeException("Customers can only cancel orders.");
-        }
+            if (order.getStatus() != OrderStatus.UNCONFIRMED) {
+                throw new RuntimeException("Order cannot be canceled in its current status.");
+            }
 
-        // Prevent canceling orders that are already processed
-        if (order.getStatus() != OrderStatus.UNCONFIRMED) {
-            throw new RuntimeException("Order cannot be canceled in its current status.");
-        }
+            order.setStatus(OrderStatus.CANCELED);
+            customerOrderRepository.save(order);
+            return Map.of("message", "Order successfully canceled.");
+        });
+    }
 
-        order.setStatus(OrderStatus.CANCELED);
-        customerOrderRepository.save(order);
 
-        return Map.of("message", "Order successfully canceled.");
+    /**
+     * Retrieves a specific order for the authenticated user.
+     */
+    public ResponseEntity<CustomerOrderDTO> getOrderByIdentifier(String username, String identifier) {
+        return ResponseUtils.handleRequest(() -> {
+            if (identifier.matches("\\d+")) { // Numeric order ID
+                return customerOrderRepository.findById(Long.parseLong(identifier))
+                        .map(CustomerOrderDTO::new)
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
+            } else { // Alphanumeric order number
+                CustomerOrder order = customerOrderRepository.findByOrderNumber(identifier)
+                        .orElseThrow(() -> new RuntimeException("Order not found"));
+
+                if (!order.getUser().getUsername().equals(username)) {
+                    throw new RuntimeException("Access denied.");
+                }
+
+                return new CustomerOrderDTO(order);
+            }
+        });
     }
 
 
