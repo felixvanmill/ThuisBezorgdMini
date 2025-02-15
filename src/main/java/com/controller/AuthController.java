@@ -2,21 +2,12 @@ package com.controller;
 
 import com.dto.LoginRequestDTO;
 import com.dto.UserRegistrationDTO;
-import com.model.AppUser;
-import com.model.UserRole;
 import com.response.JwtResponse;
-import com.security.JwtTokenUtil;
-import com.service.UserService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.service.AuthService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.AuthenticationException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
-import java.util.Optional;
 
 /**
  * Handles authentication and user registration.
@@ -25,58 +16,25 @@ import java.util.Optional;
 @RequestMapping("/api/v1/auth")
 public class AuthController {
 
-    @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthService authService;
 
-    @Autowired
-    private JwtTokenUtil jwtTokenUtil;
-
-    @Autowired
-    private UserService userService;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
+    public AuthController(AuthService authService) {
+        this.authService = authService;
+    }
 
     /**
-     * Registers a new user. This is not used yet so far in the application.
-     * Its a set-up to-be used in newer versions of the API
+     * Registers a new user.
      */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@RequestBody @Valid UserRegistrationDTO userRegistrationDTO) {
-        if (userService.userExists(userRegistrationDTO.getUsername())) {
-            return ResponseEntity.badRequest().body("Username is already taken.");
-        }
-
-        UserRole role = UserRole.valueOf(userRegistrationDTO.getRole().toUpperCase());
-        AppUser user = new AppUser(
-                userRegistrationDTO.getUsername(),
-                passwordEncoder.encode(userRegistrationDTO.getPassword()),
-                role,
-                userRegistrationDTO.getFullName()
-        );
-
-        userService.addUser(user);
-        return ResponseEntity.ok("User registered successfully.");
+        return authService.registerUser(userRegistrationDTO);
     }
 
     /**
      * Authenticates a user and returns a JWT token.
      */
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody @Valid LoginRequestDTO request) {
-        Optional<AppUser> userOptional = userService.getUserByUsername(request.getUsername());
-
-        if (userOptional.isEmpty()) {
-            return ResponseEntity.status(404).body("User not found.");
-        }
-
-        AppUser user = userOptional.get();
-
-        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
-            return ResponseEntity.status(401).body("Incorrect username or password.");
-        }
-
-        String token = jwtTokenUtil.generateToken(user.getUsername(), user.getRole().name());
-        return ResponseEntity.ok(new JwtResponse(token));
+    public ResponseEntity<JwtResponse> login(@RequestBody @Valid LoginRequestDTO request) {
+        return authService.login(request);
     }
 }

@@ -219,6 +219,13 @@ public class RestaurantService {
                 .collect(Collectors.toList());
     }
 
+    @Transactional(readOnly = true)
+    public List<CustomerOrderDTO> getAllOrders() {
+        return customerOrderRepository.findAll()
+                .stream().map(CustomerOrderDTO::new)
+                .collect(Collectors.toList());
+    }
+
 
 
 }

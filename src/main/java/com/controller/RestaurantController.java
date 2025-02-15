@@ -136,10 +136,15 @@ public class RestaurantController {
      * Fetches orders based on their status.
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
-    @GetMapping("/orders/status/{status}")
-    public ResponseEntity<?> getOrdersByStatus(@PathVariable String status) {
+    @GetMapping("/orders")
+    public ResponseEntity<List<CustomerOrderDTO>> getOrdersByStatus(
+            @RequestParam(required = false) String status) {
+
         return handleRequest(() -> {
-            return restaurantService.getOrdersByStatus(OrderStatus.valueOf(status.toUpperCase()));
+            if (status != null) {
+                return restaurantService.getOrdersByStatus(OrderStatus.valueOf(status.toUpperCase()));
+            }
+            return restaurantService.getAllOrders();
         });
     }
 
