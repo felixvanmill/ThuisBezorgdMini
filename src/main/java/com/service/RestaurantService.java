@@ -51,7 +51,6 @@ public class RestaurantService {
     }
 
 
-
     /**
      * Get all restaurants with menu items (excluding inventory).
      */
@@ -66,8 +65,6 @@ public class RestaurantService {
     }
 
 
-
-
     /**
      * Get a restaurant by slug with its employees.
      */
@@ -76,8 +73,6 @@ public class RestaurantService {
         return restaurantRepository.findBySlugWithEmployees(slug)
                 .orElseThrow(() -> new RuntimeException("Restaurant not found with slug: " + slug));
     }
-
-
 
 
     /**
