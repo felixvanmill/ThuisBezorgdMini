@@ -8,6 +8,7 @@ import com.model.Address;
 import com.repository.CustomerOrderRepository;
 import com.repository.MenuItemRepository;
 import com.repository.AddressRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +19,9 @@ import java.util.List;
  */
 @Service
 public class OrderService {
+
+    @Autowired
+    private CustomerOrderRepository customerOrderRepository;
 
     private final CustomerOrderRepository orderRepository;
     private final MenuItemRepository menuItemRepository;
@@ -178,5 +182,15 @@ public class OrderService {
     public Address getAddressById(Long addressId) {
         return addressRepository.findAddressById(addressId)
                 .orElseThrow(() -> new RuntimeException("Address not found with ID: " + addressId));
+    }
+
+    public CustomerOrderDTO getOrderByIdentifier(String identifier) {
+        CustomerOrder order = identifier.matches("\\d+")
+                ? customerOrderRepository.findById(Long.parseLong(identifier))
+                .orElseThrow(() -> new RuntimeException("Order not found"))
+                : customerOrderRepository.findByOrderNumber(identifier)
+                .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        return new CustomerOrderDTO(order);
     }
 }

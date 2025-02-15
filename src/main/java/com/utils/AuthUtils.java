@@ -32,4 +32,6 @@ public class AuthUtils {
                 .map(user -> user.getRestaurant() != null ? user.getRestaurant().getId() : null)
                 .orElse(null);
     }
+
+
 }
