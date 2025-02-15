@@ -16,32 +16,6 @@ import java.util.Optional;
 @Repository
 public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
 
-    /**
-     * Fetch menu items by restaurant ID.
-     *
-     * @param restaurantId The ID of the restaurant.
-     * @return List of menu items belonging to the restaurant.
-     */
-    List<MenuItem> findByRestaurant_Id(Long restaurantId);
-
-    /**
-     * Fetch menu items with inventory above a specific threshold for a restaurant.
-     *
-     * @param restaurantId      The ID of the restaurant.
-     * @param inventoryThreshold The inventory threshold.
-     * @return List of menu items meeting the inventory criteria.
-     */
-    List<MenuItem> findByRestaurant_IdAndInventoryGreaterThan(Long restaurantId, int inventoryThreshold);
-
-    /**
-     * Increment the inventory of a menu item by a specified quantity.
-     *
-     * @param menuItemId The ID of the menu item.
-     * @param quantity   The quantity to add.
-     */
-    @Modifying
-    @Query("UPDATE MenuItem m SET m.inventory = m.inventory + :quantity WHERE m.id = :menuItemId")
-    void addInventory(@Param("menuItemId") Long menuItemId, @Param("quantity") int quantity);
 
     /**
      * Fetch menu items by availability status for a restaurant.
