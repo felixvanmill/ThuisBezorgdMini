@@ -1,5 +1,6 @@
 package com.utils;
 
+import com.model.CustomerOrder;
 import com.model.OrderStatus;
 
 import java.util.Map;
@@ -25,5 +26,14 @@ public class ValidationUtils {
             case TRANSPORT -> newStatus == OrderStatus.DELIVERED;
             default -> false;
         };
+    }
+
+    /**
+     * Validates whether the logged-in delivery person is authorized to manage the given order.
+     */
+    public static void validateDeliveryPerson(CustomerOrder order, String loggedInUsername) {
+        if (!loggedInUsername.equals(order.getDeliveryPerson())) {
+            throw new RuntimeException("Unauthorized: You are not assigned to this order.");
+        }
     }
 }

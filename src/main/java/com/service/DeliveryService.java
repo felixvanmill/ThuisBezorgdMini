@@ -9,9 +9,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+
+
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+
+
 
 /**
  * Handles delivery-related operations such as assigning orders, confirming pickups, and tracking deliveries.
@@ -50,12 +54,16 @@ public class DeliveryService {
      * @throws RuntimeException if the order is not found.
      */
     @Transactional
-    public CustomerOrder assignOrder(String identifier) {
+    public Map<String, Object> assignOrder(String identifier) {
         CustomerOrder order = findOrderByIdentifier(identifier);
         order.setDeliveryPerson(getAuthenticatedUsername());
-        return customerOrderRepository.save(order);
-    }
+        customerOrderRepository.save(order);
 
+        return Map.of(
+                "message", "Delivery person assigned successfully.",
+                "orderId", order.getId()
+        );
+    }
 
 
     /**
@@ -96,10 +104,10 @@ public class DeliveryService {
     @Transactional(readOnly = true)
     public CustomerOrderDTO getOrderDetails(String identifier) {
         CustomerOrder order = findOrderByIdentifier(identifier);
-        validateDeliveryPerson(order);
-
+        ValidationUtils.validateDeliveryPerson(order, getAuthenticatedUsername()); // ✅ Fixed
         return new CustomerOrderDTO(order);
     }
+
 
 
     /**
@@ -120,17 +128,6 @@ public class DeliveryService {
         }
     }
 
-    /**
-     * Validates whether the logged-in delivery person is authorized to manage the given order.
-     *
-     * @param order The order to validate.
-     * @throws RuntimeException if the order is not assigned to the logged-in delivery person.
-     */
-    protected void validateDeliveryPerson(CustomerOrder order) {
-        if (!getAuthenticatedUsername().equals(order.getDeliveryPerson())) {
-            throw new RuntimeException("Unauthorized: You are not assigned to this order.");
-        }
-    }
 
     /**
      * Retrieves the username of the currently authenticated delivery person.
@@ -143,31 +140,83 @@ public class DeliveryService {
 
 
     @Transactional
+    public Map<String, Object> processOrderStatusUpdate(String identifier, Map<String, String> requestBody) {
+        String status = extractAndValidateStatus(requestBody); // Extract status safely
+        return updateOrderStatus(identifier, status);
+    }
+
+    /**
+     * Extracts and validates the status field from the request body.
+     *
+     * @param requestBody The request payload containing the status field.
+     * @return The validated status value.
+     * @throws IllegalArgumentException if the status is missing or invalid.
+     */
+    private String extractAndValidateStatus(Map<String, String> requestBody) {
+        if (!ValidationUtils.isValidStatus(requestBody, "status")) {
+            throw new IllegalArgumentException("Status must be provided and cannot be empty.");
+        }
+        return requestBody.get("status");
+    }
+
+    /**
+     * Updates the order status after validation.
+     */
+    @Transactional
     public Map<String, Object> updateOrderStatus(String identifier, String status) {
         CustomerOrder order = findOrderByIdentifier(identifier);
-        validateDeliveryPerson(order);
+        String loggedInUser = getAuthenticatedUsername();
 
+        ValidationUtils.validateDeliveryPerson(order, loggedInUser);
+
+        OrderStatus newStatus = parseOrderStatus(status);
+
+        if (!ValidationUtils.isValidStatusTransition(order.getStatus(), newStatus)) {
+            throw new IllegalArgumentException(
+                    "Invalid status transition from " + order.getStatus() + " to " + newStatus);
+        }
+
+        order.setStatus(newStatus);
+        customerOrderRepository.save(order);
+
+        return Map.of(
+                "message", "Order status updated successfully.",
+                "orderId", order.getId(),
+                "newStatus", newStatus
+        );
+    }
+
+    /**
+     * Parses and validates the order status.
+     */
+    private OrderStatus parseOrderStatus(String status) {
         try {
-            OrderStatus newStatus = OrderStatus.valueOf(status.toUpperCase());
-
-            // ✅ Now using ValidationUtils
-            if (!ValidationUtils.isValidStatusTransition(order.getStatus(), newStatus)) {
-                throw new RuntimeException("Invalid status transition.");
-            }
-
-            order.setStatus(newStatus);
-            customerOrderRepository.save(order); // ✅ FIXED: Changed to customerOrderRepository
-
-            return Map.of(
-                    "message", "Order status updated successfully.",
-                    "orderId", order.getId(),
-                    "newStatus", newStatus
-            );
+            return OrderStatus.valueOf(status.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new RuntimeException("Invalid order status: " + status);
+            throw new IllegalArgumentException("Invalid order status provided: " + status);
         }
     }
 
+    /**
+     * Retrieves menu items for a specific order along with their quantities.
+     *
+     * @param identifier The order ID or order number.
+     * @return A list of menu items with their quantities.
+     * @throws RuntimeException if the order is not found or unauthorized.
+     */
+    @Transactional(readOnly = true)
+    public List<Map<String, Object>> getOrderItems(String identifier) {
+        CustomerOrder order = customerOrderRepository.findByOrderNumberWithItems(identifier)
+                .orElseThrow(() -> new RuntimeException("Order not found with identifier: " + identifier));
 
+        ValidationUtils.validateDeliveryPerson(order, getAuthenticatedUsername());
+
+        return order.getOrderItems().stream()
+                .map(orderItem -> Map.of(
+                        "menuItemName", (Object) orderItem.getMenuItem().getName(),
+                        "quantity", (Object) orderItem.getQuantity() // ✅ Explicit cast to Object
+                ))
+                .collect(Collectors.toList());
+    }
 
 }

@@ -1,7 +1,6 @@
 package com.controller;
 
 import com.dto.CustomerOrderDTO;
-import com.model.CustomerOrder;
 import com.service.DeliveryService;
 import com.utils.ResponseUtils;
 import com.utils.ValidationUtils;
@@ -41,13 +40,7 @@ public class DeliveryController {
      */
     @PostMapping("/orders/{identifier}/assign")
     public ResponseEntity<Map<String, Object>> assignDeliveryPerson(@PathVariable String identifier) {
-        return ResponseUtils.handleRequest(() -> {
-            CustomerOrder order = deliveryService.assignOrder(identifier);
-            return Map.of(
-                    "message", "Delivery person assigned successfully.",
-                    "orderId", order.getId()
-            );
-        });
+        return ResponseUtils.handleRequest(() -> deliveryService.assignOrder(identifier)); // ✅ Now matches new return type
     }
 
 
@@ -84,14 +77,20 @@ public class DeliveryController {
             @PathVariable String identifier,
             @RequestBody Map<String, String> requestBody) {
 
-        return ResponseUtils.handleRequest(() -> {
-            String status = requestBody.get("status");
-
-            if (!ValidationUtils.isValidStatus(requestBody, "status")) {
-                throw new IllegalArgumentException("Status must be provided.");
-            }
-
-            return deliveryService.updateOrderStatus(identifier, status);
-        });
+        return ResponseUtils.handleRequest(() -> deliveryService.processOrderStatusUpdate(identifier, requestBody));
     }
+
+    /**
+     * Retrieves the menu items for a specific order along with quantities.
+     */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
+    @GetMapping("/orders/{identifier}/items")
+    public ResponseEntity<Map<String, Object>> getOrderItems(@PathVariable String identifier) {
+        return ResponseUtils.handleRequest(() -> Map.of(
+                "orderItems", deliveryService.getOrderItems(identifier)
+        ));
+    }
+
+
+
 }
