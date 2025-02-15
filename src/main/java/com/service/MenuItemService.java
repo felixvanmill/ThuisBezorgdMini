@@ -1,9 +1,8 @@
-// src/main/java/com/service/MenuItemService.java
-
 package com.service;
 
 import com.dto.InventoryUpdateRequestDTO;
 import com.exception.ResourceNotFoundException;
+import com.exception.ValidationException;
 import com.model.AppUser;
 import com.model.MenuItem;
 import com.repository.AppUserRepository;
@@ -16,19 +15,20 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import jakarta.transaction.Transactional;
-
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 @Service
 public class MenuItemService {
 
-    @Autowired
-    private MenuItemRepository menuItemRepository;
+    private final MenuItemRepository menuItemRepository;
+    private final AppUserRepository appUserRepository;
 
     @Autowired
-    private AppUserRepository appUserRepository;
+    public MenuItemService(MenuItemRepository menuItemRepository, AppUserRepository appUserRepository) {
+        this.menuItemRepository = menuItemRepository;
+        this.appUserRepository = appUserRepository;
+    }
 
     /**
      * Get all menu items.
@@ -40,14 +40,16 @@ public class MenuItemService {
     /**
      * Get a menu item by ID.
      */
-    public Optional<MenuItem> getMenuItemById(Long id) {
-        return menuItemRepository.findById(id);
+    public MenuItem getMenuItemById(Long id) {
+        return menuItemRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with ID: " + id));
     }
 
     /**
      * Add a new menu item.
      */
     public MenuItem addMenuItem(MenuItem menuItem) {
+        validateMenuItem(menuItem);
         return menuItemRepository.save(menuItem);
     }
 
@@ -60,13 +62,12 @@ public class MenuItemService {
                 .orElseThrow(() -> new ResourceNotFoundException("MenuItem not found with ID: " + inventoryUpdate.getMenuItemId()));
 
         if (!menuItem.getRestaurant().getSlug().equals(slug)) {
-            throw new IllegalArgumentException("MenuItem does not belong to restaurant: " + slug);
+            throw new ValidationException("MenuItem does not belong to restaurant: " + slug);
         }
 
         menuItem.setInventory(inventoryUpdate.getQuantity());
         menuItemRepository.save(menuItem);
     }
-
 
     /**
      * Update a menu item.
@@ -75,6 +76,8 @@ public class MenuItemService {
     public MenuItem updateMenuItem(Long id, MenuItem menuItemDetails) {
         MenuItem menuItem = menuItemRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Menu item not found with id: " + id));
+
+        validateMenuItem(menuItemDetails);
 
         menuItem.setName(menuItemDetails.getName());
         menuItem.setDescription(menuItemDetails.getDescription());
@@ -89,25 +92,26 @@ public class MenuItemService {
      * Delete a menu item by ID.
      */
     public void deleteMenuItem(Long id) {
+        if (!menuItemRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Menu item not found with ID: " + id);
+        }
         menuItemRepository.deleteById(id);
     }
-
 
     @Transactional
     public List<String> processCsvFile(MultipartFile file, Long restaurantId) {
         return CsvUtils.processMenuCsvFile(file, restaurantId, this);
     }
 
-
     /**
      * Get the restaurant ID for a user by username.
      */
     public Long getRestaurantIdForUser(String username) {
         AppUser user = appUserRepository.findByUsername(username)
-                .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with username: " + username));
 
         if (user.getRestaurant() == null) {
-            throw new RuntimeException("No restaurant is associated with the user: " + username);
+            throw new ValidationException("No restaurant is associated with the user: " + username);
         }
 
         return user.getRestaurant().getId();
@@ -137,6 +141,21 @@ public class MenuItemService {
             );
         }
         return Map.of("message", "Menu updated successfully!");
+    }
+
+    /**
+     * Validates menu item details.
+     */
+    private void validateMenuItem(MenuItem menuItem) {
+        if (menuItem.getName() == null || menuItem.getName().trim().isEmpty()) {
+            throw new ValidationException("Menu item name cannot be empty.");
+        }
+        if (menuItem.getPrice() == null) { // ✅ This now works!
+            throw new ValidationException("Menu item price cannot be null.");
+        }
+        if (menuItem.getPrice() <= 0) {
+            throw new ValidationException("Menu item price must be greater than 0.");
+        }
     }
 
 }
