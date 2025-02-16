@@ -26,23 +26,23 @@ class DatabaseSchemaTest {
     @Test
     void validateDatabaseSchema() {
         try {
-            // ✅ FIX: Unwrap the correct Hibernate implementation
+            // Unwrap the correct Hibernate implementation
             SessionFactoryImplementor sessionFactoryImplementor = entityManagerFactory
                     .unwrap(SessionFactoryImplementor.class);
 
-            // ✅ Build Hibernate service registry
+            // Build Hibernate service registry
             StandardServiceRegistry serviceRegistry = new StandardServiceRegistryBuilder()
                     .applySettings(sessionFactoryImplementor.getProperties())
                     .build();
 
-            // ✅ Extract metadata from Hibernate
+            // Extract metadata from Hibernate
             Metadata metadata = new MetadataSources(serviceRegistry).buildMetadata();
 
-            // ✅ Get Schema Management Tool
+            // Get Schema Management Tool
             SchemaManagementTool schemaManagementTool = serviceRegistry.getService(SchemaManagementTool.class);
             SchemaValidator schemaValidator = schemaManagementTool.getSchemaValidator(Collections.emptyMap());
 
-            // ✅ Define Execution Options
+            // Define Execution Options
             ExecutionOptions executionOptions = new ExecutionOptions() {
                 @Override
                 public boolean shouldManageNamespaces() {
@@ -60,7 +60,7 @@ class DatabaseSchemaTest {
                 }
             };
 
-            // ✅ Perform Validation
+            // Perform Validation
             schemaValidator.doValidation(metadata, executionOptions, ContributableMatcher.ALL);
 
         } catch (Exception e) {
