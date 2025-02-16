@@ -2,9 +2,6 @@ package com.repository;
 
 import com.model.MenuItem;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Modifying;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -33,4 +30,12 @@ public interface MenuItemRepository extends JpaRepository<MenuItem, Long> {
      * @return The menu item, if found.
      */
     Optional<MenuItem> findMenuItemById(Long id);
+
+    /**
+     * Uses the inherited findById method from JpaRepository to find a MenuItem by its ID.
+     *
+     * @param id The ID of the menu item.
+     * @return The menu item, if found.
+     * @see org.springframework.data.jpa.repository.JpaRepository#findById(Object)
+     */
 }

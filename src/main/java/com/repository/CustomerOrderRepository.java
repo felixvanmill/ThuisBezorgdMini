@@ -140,4 +140,12 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     @Query("SELECT o FROM CustomerOrder o WHERE o.id = :id")
     Optional<CustomerOrder> findCustomerOrderById(@Param("id") Long id);
 
+    /**
+     * Uses the inherited save method from JpaRepository to insert or update a MenuItem.
+     *
+     * @param menuItem The menu item to be saved.
+     * @return The saved menu item.
+     * @see org.springframework.data.jpa.repository.JpaRepository#save(Object)
+     */
+
 }

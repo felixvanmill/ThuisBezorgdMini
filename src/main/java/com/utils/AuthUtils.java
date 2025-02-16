@@ -27,11 +27,6 @@ public class AuthUtils {
         return authentication != null ? authentication.getName() : null;
     }
 
-    public static Long getAuthenticatedRestaurantId(String username) {
-        return appUserRepository.findByUsername(username)
-                .map(user -> user.getRestaurant() != null ? user.getRestaurant().getId() : null)
-                .orElse(null);
-    }
 
     public static String getAuthenticatedUsername() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
