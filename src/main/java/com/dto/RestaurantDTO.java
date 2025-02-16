@@ -2,7 +2,7 @@ package com.dto;
 
 import com.model.Restaurant;
 import com.model.MenuItem;
-
+import jakarta.validation.constraints.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,8 +12,12 @@ import java.util.stream.Collectors;
  */
 public class RestaurantDTO {
 
+    @NotBlank(message = "Naam is verplicht")
     private final String name;
+
+    @NotBlank(message = "Slug is verplicht")
     private final String slug;
+
     private List<MenuItemDTO> menuItems;
 
     /**

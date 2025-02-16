@@ -2,6 +2,7 @@ package com.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.model.MenuItem;
+import jakarta.validation.constraints.*;
 
 /**
  * DTO for transferring menu item data.
@@ -9,12 +10,22 @@ import com.model.MenuItem;
 public class MenuItemDTO {
 
     private Long id;
+
+    @NotBlank(message = "Naam is verplicht")
+    @Size(min = 2, max = 100, message = "Naam moet tussen 2 en 100 tekens zijn")
     private String name;
+
+    @NotBlank(message = "Beschrijving is verplicht")
+    @Size(max = 500, message = "Beschrijving mag maximaal 500 tekens bevatten")
     private String description;
+
+    @Positive(message = "Prijs moet een positief getal zijn")
     private double price;
+
     private boolean isAvailable;
 
     @JsonInclude(JsonInclude.Include.NON_NULL) // Exclude if null
+    @Min(value = 0, message = "Voorraad mag niet negatief zijn")
     private Integer inventory; // Null if inventory is not included
 
     // No-args constructor for serialization/deserialization
@@ -54,14 +65,6 @@ public class MenuItemDTO {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public String getDescription() {
-        return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 
     public double getPrice() {

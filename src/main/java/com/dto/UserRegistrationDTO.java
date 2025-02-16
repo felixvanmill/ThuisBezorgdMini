@@ -1,22 +1,25 @@
 package com.dto;
 
-import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.*;
 
 /**
  * DTO for user registration details.
  */
 public class UserRegistrationDTO {
 
-    @NotBlank
+    @NotBlank(message = "Gebruikersnaam is verplicht")
+    @Size(min = 3, max = 50, message = "Gebruikersnaam moet tussen 3 en 50 tekens zijn")
     private String username;
 
-    @NotBlank
+    @NotBlank(message = "Wachtwoord is verplicht")
+    @Size(min = 8, max = 100, message = "Wachtwoord moet minimaal 8 tekens lang zijn")
     private String password;
 
-    @NotBlank
+    @NotBlank(message = "Rol is verplicht")
     private String role;
 
-    @NotBlank
+    @NotBlank(message = "Volledige naam is verplicht")
+    @Size(min = 2, max = 100, message = "Volledige naam moet tussen 2 en 100 tekens zijn")
     private String fullName;
 
     // Getters and Setters
