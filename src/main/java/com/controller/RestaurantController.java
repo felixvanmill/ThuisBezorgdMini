@@ -90,6 +90,7 @@ public class RestaurantController {
     /**
      * Downloads a CSV of orders for the authenticated restaurant.
      */
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/orders/download")
     public ResponseEntity<byte[]> downloadOrdersAsCsv() {
         String username = getLoggedInUsername();

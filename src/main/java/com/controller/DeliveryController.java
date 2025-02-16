@@ -30,6 +30,7 @@ public class DeliveryController {
     /**
      * Retrieves all orders relevant to delivery personnel.
      */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @GetMapping("/orders")
     public ResponseEntity<Map<String, List<CustomerOrderDTO>>> getAllOrders() {
         return ResponseEntity.ok(Map.of("orders", deliveryService.getAllDeliveryOrders()));
@@ -38,6 +39,7 @@ public class DeliveryController {
     /**
      * Assigns the logged-in delivery person to an order.
      */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @PostMapping("/orders/{identifier}/assign")
     public ResponseEntity<Map<String, Object>> assignDeliveryPerson(@PathVariable String identifier) {
         return ResponseUtils.handleRequest(() -> deliveryService.assignOrder(identifier));
@@ -46,6 +48,7 @@ public class DeliveryController {
     /**
      * Retrieves orders assigned to the logged-in delivery person.
      */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @GetMapping("/myOrders")
     public ResponseEntity<Map<String, List<CustomerOrderDTO>>> getAssignedOrders() {
         return ResponseEntity.ok(Map.of("orders", deliveryService.getAssignedOrders()));
@@ -54,6 +57,7 @@ public class DeliveryController {
     /**
      * Retrieves the delivery history for the logged-in delivery person.
      */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @GetMapping("/history")
     public ResponseEntity<Map<String, List<CustomerOrderDTO>>> getDeliveryHistory() {
         return ResponseEntity.ok(Map.of("deliveredOrders", deliveryService.getDeliveryHistory()));
@@ -62,6 +66,7 @@ public class DeliveryController {
     /**
      * Retrieves details of a specific order.
      */
+    @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @GetMapping("/orders/{identifier}/details")
     public ResponseEntity<CustomerOrderDTO> getOrderDetails(@PathVariable String identifier) {
         return ResponseUtils.handleRequest(() -> deliveryService.getOrderDetails(identifier));

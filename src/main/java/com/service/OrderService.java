@@ -40,6 +40,7 @@ public class OrderService {
         return orderRepository.findCustomerOrderById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + id));
     }
+
     /**
      * Get an order by identifier (either ID or order number).
      */
@@ -50,17 +51,20 @@ public class OrderService {
         }
 
         CustomerOrder order;
+
+        // If it's all digits, treat it as an ID. Otherwise, treat it as an order number.
         if (identifier.matches("\\d+")) {
-            try {
-                order = orderRepository.findById(Long.parseLong(identifier))
-                        .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + identifier));
-            } catch (NumberFormatException e) {
-                throw new ValidationException("Invalid order ID format: " + identifier);
-            }
+            order = orderRepository.findById(Long.parseLong(identifier))
+                    .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + identifier));
         } else {
             order = orderRepository.findByOrderNumber(identifier)
                     .orElseThrow(() -> new ResourceNotFoundException("Order not found with order number: " + identifier));
         }
+
         return new CustomerOrderDTO(order);
     }
+
+
+
 }
+
