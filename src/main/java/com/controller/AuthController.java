@@ -26,8 +26,9 @@ public class AuthController {
      * Registers a new user.
      */
     @PostMapping("/register")
-    public ResponseEntity<?> registerUser(@RequestBody @Valid UserRegistrationDTO userRegistrationDTO) {
-        return authService.registerUser(userRegistrationDTO);
+    public ResponseEntity<String> registerUser(@RequestBody @Valid UserRegistrationDTO userRegistrationDTO) {
+        String message = authService.registerUser(userRegistrationDTO);
+        return ResponseEntity.ok(message);
     }
 
     /**
@@ -35,6 +36,7 @@ public class AuthController {
      */
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> login(@RequestBody @Valid LoginRequestDTO request) {
-        return authService.login(request);
+        JwtResponse jwtResponse = authService.login(request);
+        return ResponseEntity.ok(jwtResponse);
     }
 }

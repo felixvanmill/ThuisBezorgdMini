@@ -1,5 +1,6 @@
 package com.utils;
 
+import com.exception.ResourceNotFoundException;
 import com.model.CustomerOrder;
 import com.model.OrderStatus;
 import com.repository.CustomerOrderRepository;
@@ -27,23 +28,24 @@ public class OrderUtils {
         return List.of(OrderStatus.READY_FOR_DELIVERY, OrderStatus.PICKING_UP, OrderStatus.TRANSPORT);
     }
 
-
     /**
      * Finds an order by its identifier.
+     * Throws `ResourceNotFoundException` if not found.
      */
     public static CustomerOrder findOrderByIdentifier(CustomerOrderRepository repo, String identifier) {
         return identifier.matches("\\d+") ?
                 repo.findById(Long.parseLong(identifier))
-                        .orElseThrow(() -> new RuntimeException("Order not found with ID: " + identifier))
+                        .orElseThrow(() -> new ResourceNotFoundException("Order not found with ID: " + identifier))
                 : repo.findByOrderNumber(identifier)
-                .orElseThrow(() -> new RuntimeException("Order not found with order number: " + identifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with order number: " + identifier));
     }
 
     /**
      * Finds an order with menu items.
+     * Throws `ResourceNotFoundException` if not found.
      */
     public static CustomerOrder findOrderWithItems(CustomerOrderRepository repo, String identifier) {
         return repo.findByOrderNumberWithItems(identifier)
-                .orElseThrow(() -> new RuntimeException("Order not found with identifier: " + identifier));
+                .orElseThrow(() -> new ResourceNotFoundException("Order not found with identifier: " + identifier));
     }
 }

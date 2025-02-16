@@ -41,7 +41,7 @@ public class MenuItemController {
      * Fetches a specific menu item by its ID.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<Optional<MenuItem>> getMenuItemById(@PathVariable Long id) {
+    public ResponseEntity<MenuItem> getMenuItemById(@PathVariable Long id) {
         return ResponseUtils.handleRequest(() -> menuItemService.getMenuItemById(id));
     }
 

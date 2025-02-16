@@ -1,5 +1,8 @@
 package com.utils;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
 import java.util.Map;
 
 public class ExceptionUtils {
@@ -9,4 +12,10 @@ public class ExceptionUtils {
     public static Map<String, String> createErrorMessage(String message) {
         return Map.of("error", message);
     }
+
+    public static ResponseEntity<Map<String, String>> createErrorResponse(int statusCode, String message) {
+        return ResponseEntity.status(HttpStatus.valueOf(statusCode))
+                .body(createErrorMessage(message));
+    }
+
 }

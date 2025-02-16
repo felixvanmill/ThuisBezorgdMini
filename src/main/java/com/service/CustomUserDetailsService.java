@@ -2,7 +2,6 @@ package com.service;
 
 import com.model.AppUser;
 import com.repository.AppUserRepository;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -19,8 +18,11 @@ import java.util.Collections;
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
 
-    @Autowired
-    private AppUserRepository userRepository;
+    private final AppUserRepository userRepository;
+
+    public CustomUserDetailsService(AppUserRepository userRepository) {
+        this.userRepository = userRepository;
+    }
 
     /**
      * Loads user details by username.
@@ -33,19 +35,28 @@ public class CustomUserDetailsService implements UserDetailsService {
     public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
         // Find user in the database
         AppUser user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with username: " + username));
+                .orElseThrow(() -> {
+                    System.err.println("User not found with username: " + username); // Logging
+                    return new UsernameNotFoundException("User not found with username: " + username);
+                });
 
-        // Get the user's role
-        GrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + user.getRole().name());
+        // Ensure the role is prefixed correctly
+        String roleName = user.getRole().name();
+        if (!roleName.startsWith("ROLE_")) {
+            roleName = "ROLE_" + roleName;
+        }
+
+        // Create authority object
+        GrantedAuthority authority = new SimpleGrantedAuthority(roleName);
 
         // Return user details for Spring Security
         return new User(
                 user.getUsername(),
                 user.getPassword(),
-                true, // Account is enabled
-                true, // Account is not expired
-                true, // Credentials are not expired
-                true, // Account is not locked
+                true,  // Account is enabled
+                true,  // Account is not expired
+                true,  // Credentials are not expired
+                true,  // Account is not locked
                 Collections.singleton(authority) // User's role
         );
     }

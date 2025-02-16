@@ -14,7 +14,7 @@ public class MenuItem {
 
     private String name;
     private String description;
-    private double price;
+    private Double price;
     private String ingredients;
 
     @ManyToOne
@@ -31,12 +31,12 @@ public class MenuItem {
     public MenuItem() {
     }
 
-    public MenuItem(String name, double price) {
+    public MenuItem(String name, Double price) {
         this.name = name;
         this.price = price;
     }
 
-    public MenuItem(String name, String description, double price, String ingredients, Restaurant restaurant) {
+    public MenuItem(String name, String description, Double price, String ingredients, Restaurant restaurant) {
         this.name = name;
         this.description = description;
         this.price = price;
@@ -44,7 +44,7 @@ public class MenuItem {
         this.restaurant = restaurant;
     }
 
-    public MenuItem(String name, String description, double price, String ingredients, Restaurant restaurant, int inventory) {
+    public MenuItem(String name, String description, Double price, String ingredients, Restaurant restaurant, int inventory) {
         this.name = name;
         this.description = description;
         this.price = price;
@@ -78,9 +78,10 @@ public class MenuItem {
         this.description = description;
     }
 
-    public double getPrice() {
+    public Double getPrice() {
         return price;
     }
+
 
     public void setPrice(double price) {
         this.price = price;

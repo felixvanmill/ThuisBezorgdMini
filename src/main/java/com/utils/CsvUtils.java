@@ -1,6 +1,7 @@
 package com.utils;
 
 import com.dto.OrderDTO;
+import com.exception.ResourceNotFoundException;
 import com.model.CustomerOrder;
 import com.repository.CustomerOrderRepository;
 import com.service.MenuItemService;
@@ -80,9 +81,17 @@ public class CsvUtils {
                     String ingredients = record.isSet("ingredients") ? record.get("ingredients") : null;
                     String itemId = record.isSet("id") ? record.get("id") : null;
 
-                    MenuItem menuItem = (itemId != null) ?
-                            menuItemService.getMenuItemById(Long.parseLong(itemId)).orElse(new MenuItem()) :
-                            new MenuItem();
+                    MenuItem menuItem;
+                    if (itemId != null) {
+                        try {
+                            menuItem = menuItemService.getMenuItemById(Long.parseLong(itemId));
+                        } catch (ResourceNotFoundException e) {
+                            menuItem = new MenuItem(); // If not found, create a new one
+                        }
+                    } else {
+                        menuItem = new MenuItem();
+                    }
+
 
                     menuItem.setName(name);
                     menuItem.setDescription(description);
