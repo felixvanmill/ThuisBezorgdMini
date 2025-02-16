@@ -8,17 +8,17 @@ import com.repository.CustomerOrderRepository;
 import com.repository.MenuItemRepository;
 import com.service.OrderService;
 import com.service.RestaurantService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-
 import org.springframework.web.bind.annotation.*;
-import static com.utils.ResponseUtils.handleRequest;
 
 import java.util.List;
 import java.util.Map;
 
 import static com.utils.AuthUtils.getLoggedInUsername;
+import static com.utils.ResponseUtils.handleRequest;
 
 /**
  * Handles operations related to restaurants, including menu management and order updates.
@@ -41,7 +41,6 @@ public class RestaurantController {
 
     @Autowired
     private OrderService orderService;
-
 
     /**
      * Retrieves a list of all available restaurants with menu items.
@@ -66,13 +65,12 @@ public class RestaurantController {
     public ResponseEntity<?> updateOrderStatus(
             @PathVariable String slug,
             @PathVariable String orderId,
-            @RequestBody Map<String, String> requestBody) {
+            @RequestBody @Valid Map<String, String> requestBody) {
         return handleRequest(() -> {
             String username = getLoggedInUsername();
             return restaurantService.updateOrderStatus(username, slug, orderId, requestBody);
         });
     }
-
 
     /**
      * Updates the availability status of a menu item for a specific restaurant.
@@ -82,13 +80,12 @@ public class RestaurantController {
     public ResponseEntity<?> updateMenuItemAvailability(
             @PathVariable String slug,
             @PathVariable Long menuItemId,
-            @RequestBody Map<String, Boolean> request) {
+            @RequestBody @Valid Map<String, Boolean> request) {
         return handleRequest(() -> {
             String username = getLoggedInUsername();
             return restaurantService.updateMenuItemAvailability(username, slug, menuItemId, request);
         });
     }
-
 
     /**
      * Downloads a CSV of orders for the authenticated restaurant.
@@ -99,9 +96,8 @@ public class RestaurantController {
         return restaurantService.downloadOrdersAsCsv(username);
     }
 
-
     /**
-     * Fetches orders by ordernumber in format "ORDER001", for restaurant employees
+     * Fetches orders by order number in format "ORDER001", for restaurant employees.
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/orders/{identifier}")
@@ -110,14 +106,13 @@ public class RestaurantController {
     }
 
     /**
-     * Fetches orders by order ID (numeric), for restaurant employees
+     * Fetches orders by order ID (numeric), for restaurant employees.
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/orders/id/{orderId}")
     public ResponseEntity<CustomerOrderDTO> getOrderById(@PathVariable Long orderId) {
         return handleRequest(() -> new CustomerOrderDTO(orderService.getOrderById(orderId)));
     }
-
 
     /**
      * Fetches orders for the logged-in restaurant employee.
@@ -130,7 +125,6 @@ public class RestaurantController {
             return restaurantService.getOrdersForEmployee(slug, username);
         });
     }
-
 
     /**
      * Fetches orders based on their status.
@@ -147,5 +141,4 @@ public class RestaurantController {
             return restaurantService.getAllOrders();
         });
     }
-
 }

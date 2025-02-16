@@ -1,11 +1,16 @@
 package com.dto;
 
+import jakarta.validation.constraints.*;
+
 /**
  * DTO for updating inventory of a menu item.
  */
 public class InventoryUpdateRequestDTO {
 
+    @NotNull(message = "MenuItem ID is verplicht")
     private Long menuItemId;
+
+    @Min(value = 1, message = "Aantal moet minimaal 1 zijn")
     private int quantity;
 
     public InventoryUpdateRequestDTO() {}

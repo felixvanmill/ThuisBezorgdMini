@@ -3,7 +3,7 @@ package com.controller;
 import com.dto.CustomerOrderDTO;
 import com.service.DeliveryService;
 import com.utils.ResponseUtils;
-import com.utils.ValidationUtils;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -40,9 +40,8 @@ public class DeliveryController {
      */
     @PostMapping("/orders/{identifier}/assign")
     public ResponseEntity<Map<String, Object>> assignDeliveryPerson(@PathVariable String identifier) {
-        return ResponseUtils.handleRequest(() -> deliveryService.assignOrder(identifier)); // ✅ Now matches new return type
+        return ResponseUtils.handleRequest(() -> deliveryService.assignOrder(identifier));
     }
-
 
     /**
      * Retrieves orders assigned to the logged-in delivery person.
@@ -75,7 +74,7 @@ public class DeliveryController {
     @PatchMapping("/orders/{identifier}/status")
     public ResponseEntity<Map<String, Object>> updateOrderStatus(
             @PathVariable String identifier,
-            @RequestBody Map<String, String> requestBody) {
+            @RequestBody @Valid Map<String, String> requestBody) { // ✅ Validatie toegevoegd
 
         return ResponseUtils.handleRequest(() -> deliveryService.processOrderStatusUpdate(identifier, requestBody));
     }
@@ -90,7 +89,4 @@ public class DeliveryController {
                 "orderItems", deliveryService.getOrderItems(identifier)
         ));
     }
-
-
-
 }

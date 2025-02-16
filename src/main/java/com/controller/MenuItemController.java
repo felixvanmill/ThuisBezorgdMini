@@ -4,6 +4,7 @@ import com.dto.InventoryUpdateRequestDTO;
 import com.model.MenuItem;
 import com.service.MenuItemService;
 import com.utils.ResponseUtils;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -33,6 +34,7 @@ public class MenuItemController {
      * Fetches all menu items.
      */
     @GetMapping
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     public ResponseEntity<List<MenuItem>> getAllMenuItems() {
         return ResponseEntity.ok(menuItemService.getAllMenuItems());
     }
@@ -49,7 +51,8 @@ public class MenuItemController {
      * Adds a new menu item.
      */
     @PostMapping
-    public ResponseEntity<MenuItem> addMenuItem(@RequestBody MenuItem menuItem) {
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    public ResponseEntity<MenuItem> addMenuItem(@RequestBody @Valid MenuItem menuItem) {
         return ResponseUtils.handleRequest(() -> menuItemService.addMenuItem(menuItem));
     }
 
@@ -57,7 +60,8 @@ public class MenuItemController {
      * Updates an existing menu item by its ID.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<MenuItem> updateMenuItem(@PathVariable Long id, @RequestBody MenuItem menuItemDetails) {
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
+    public ResponseEntity<MenuItem> updateMenuItem(@PathVariable Long id, @RequestBody @Valid MenuItem menuItemDetails) {
         return ResponseUtils.handleRequest(() -> menuItemService.updateMenuItem(id, menuItemDetails));
     }
 
@@ -65,6 +69,7 @@ public class MenuItemController {
      * Deletes a menu item by its ID.
      */
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     public ResponseEntity<?> deleteMenuItem(@PathVariable Long id) {
         return ResponseUtils.handleRequest(() -> {
             menuItemService.deleteMenuItem(id);
@@ -76,10 +81,11 @@ public class MenuItemController {
      * Updates the inventory of a single menu item for a specific restaurant.
      */
     @PatchMapping("/{menuItemId}/inventory")
+    @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     public ResponseEntity<?> updateInventory(
             @PathVariable String slug,
             @PathVariable Long menuItemId,
-            @RequestBody InventoryUpdateRequestDTO inventoryUpdate) {
+            @RequestBody @Valid InventoryUpdateRequestDTO inventoryUpdate) {
         return ResponseUtils.handleRequest(() ->
                 menuItemService.updateMenuItemInventory(slug, menuItemId, inventoryUpdate));
     }
@@ -93,5 +99,4 @@ public class MenuItemController {
     public ResponseEntity<?> uploadMenu(@RequestParam("file") MultipartFile file) {
         return ResponseUtils.handleRequest(() -> menuItemService.handleCsvUpload(file));
     }
-
 }
