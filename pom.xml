@@ -116,7 +116,11 @@
 			<scope>test</scope>
 		</dependency>
 
-
+		<dependency>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>6.4.10.Final</version>
+		</dependency>
 
 
 	</dependencies>
