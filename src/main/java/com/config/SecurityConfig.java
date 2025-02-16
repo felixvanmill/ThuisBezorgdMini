@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,11 +16,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.authentication.logout.LogoutHandler;
 
-/**
- * Configures security settings, enforcing JWT authentication and removing form-login.
- */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true) // Voor extra beveiliging op methodeniveau
 public class SecurityConfig {
 
     private final JwtAuthorizationFilter jwtAuthorizationFilter;
@@ -35,13 +33,34 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-                .csrf(csrf -> csrf.disable()) // Disable CSRF since we're using JWT
-                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // Enforce stateless authentication
+                .csrf(csrf -> csrf.disable()) // Disable CSRF voor stateless JWT-authenticatie
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/error").permitAll()
-                        .requestMatchers("/customer/**").hasRole("CUSTOMER")
-                        .requestMatchers("/restaurant/**").hasRole("RESTAURANT_EMPLOYEE")
-                        .requestMatchers("/api/users/**").hasRole("ADMIN") // Restrict user management to admins
+                        // Public endpoints
+                        .requestMatchers("/api/v1/auth/login", "/auth/login", "/auth/register", "/error").permitAll()
+
+                        // CUSTOMER-
+                        .requestMatchers("GET", "/api/v1/restaurants/**").permitAll()
+                        .requestMatchers("/api/v1/orders").hasRole("CUSTOMER")
+                        .requestMatchers("/api/v1/orders/{orderNumber}").hasRole("CUSTOMER")
+                        .requestMatchers("/api/v1/restaurants/{slug}/orders").hasRole("CUSTOMER")
+                        .requestMatchers("PATCH", "/api/v1/orders/{orderNumber}/status").hasRole("CUSTOMER")
+
+                        // RESTAURANT_EMPLOYEE
+                        .requestMatchers("/api/v1/restaurants/**").hasRole("RESTAURANT_EMPLOYEE")
+                        .requestMatchers("PATCH", "/api/v1/restaurants/{slug}/orders/{orderNumber}/status").hasRole("RESTAURANT_EMPLOYEE")
+                        .requestMatchers("POST", "/api/v1/restaurants/{slug}/menu-items/upload").hasRole("RESTAURANT_EMPLOYEE")
+                        .requestMatchers("GET", "/api/v1/restaurants/orders/download").hasRole("RESTAURANT_EMPLOYEE")
+
+                        // DELIVERY_PERSON
+                        .requestMatchers("GET", "/api/v1/delivery/orders").hasRole("DELIVERY_PERSON")
+                        .requestMatchers("GET", "/api/v1/delivery/history").hasRole("DELIVERY_PERSON")
+                        .requestMatchers("POST", "/api/v1/delivery/orders/{orderNumber}/assign").hasRole("DELIVERY_PERSON")
+                        .requestMatchers("PATCH", "/api/v1/delivery/orders/{orderNumber}/status").hasRole("DELIVERY_PERSON")
+
+                        // ADMIN
+                        .requestMatchers("/api/users/**").hasRole("ADMIN") // Beheer van gebruikersaccounts
+
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
