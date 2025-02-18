@@ -2,12 +2,15 @@ package com.controller;
 
 import com.dto.LoginRequestDTO;
 import com.dto.UserRegistrationDTO;
+import com.response.ApiResponse;
 import com.response.JwtResponse;
 import com.service.AuthService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+
+import java.util.Map;
 
 /**
  * Handles authentication and user registration.
@@ -35,8 +38,10 @@ public class AuthController {
      * Authenticates a user and returns a JWT token.
      */
     @PostMapping("/login")
-    public ResponseEntity<JwtResponse> login(@RequestBody @Valid LoginRequestDTO request) {
+    public ResponseEntity<ApiResponse<String>> login(@RequestBody @Valid LoginRequestDTO request) {
         JwtResponse jwtResponse = authService.login(request);
-        return ResponseEntity.ok(jwtResponse);
+        return ResponseEntity.ok(ApiResponse.success(jwtResponse.getToken()));
     }
+
+
 }

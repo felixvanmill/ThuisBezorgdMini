@@ -1,6 +1,7 @@
 package com.controller;
 
 import com.dto.CustomerOrderDTO;
+import com.response.ApiResponse;
 import com.service.DeliveryService;
 import com.utils.ResponseUtils;
 import jakarta.validation.Valid;
@@ -32,8 +33,9 @@ public class DeliveryController {
      */
     @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @GetMapping("/orders")
-    public ResponseEntity<Map<String, List<CustomerOrderDTO>>> getAllOrders() {
-        return ResponseEntity.ok(Map.of("orders", deliveryService.getAllDeliveryOrders()));
+    public ResponseEntity<ApiResponse<List<CustomerOrderDTO>>> getAllOrders() {
+        List<CustomerOrderDTO> orders = deliveryService.getAllDeliveryOrders();
+        return ResponseEntity.ok(ApiResponse.success(orders));
     }
 
     /**
@@ -41,8 +43,8 @@ public class DeliveryController {
      */
     @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @PostMapping("/orders/{identifier}/assign")
-    public ResponseEntity<Map<String, Object>> assignDeliveryPerson(@PathVariable String identifier) {
-        return ResponseUtils.handleRequest(() -> deliveryService.assignOrder(identifier));
+    public ResponseEntity<ApiResponse<Map<String, Object>>> assignDeliveryPerson(@PathVariable String identifier) {
+        return ResponseUtils.handleRequest(() -> ApiResponse.success(deliveryService.assignOrder(identifier)));
     }
 
     /**
@@ -50,8 +52,9 @@ public class DeliveryController {
      */
     @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @GetMapping("/myOrders")
-    public ResponseEntity<Map<String, List<CustomerOrderDTO>>> getAssignedOrders() {
-        return ResponseEntity.ok(Map.of("orders", deliveryService.getAssignedOrders()));
+    public ResponseEntity<ApiResponse<List<CustomerOrderDTO>>> getAssignedOrders() {
+        List<CustomerOrderDTO> orders = deliveryService.getAssignedOrders();
+        return ResponseEntity.ok(ApiResponse.success(orders));
     }
 
     /**
@@ -59,8 +62,9 @@ public class DeliveryController {
      */
     @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @GetMapping("/history")
-    public ResponseEntity<Map<String, List<CustomerOrderDTO>>> getDeliveryHistory() {
-        return ResponseEntity.ok(Map.of("deliveredOrders", deliveryService.getDeliveryHistory()));
+    public ResponseEntity<ApiResponse<List<CustomerOrderDTO>>> getDeliveryHistory() {
+        List<CustomerOrderDTO> deliveredOrders = deliveryService.getDeliveryHistory();
+        return ResponseEntity.ok(ApiResponse.success(deliveredOrders));
     }
 
     /**
@@ -68,8 +72,8 @@ public class DeliveryController {
      */
     @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @GetMapping("/orders/{identifier}/details")
-    public ResponseEntity<CustomerOrderDTO> getOrderDetails(@PathVariable String identifier) {
-        return ResponseUtils.handleRequest(() -> deliveryService.getOrderDetails(identifier));
+    public ResponseEntity<ApiResponse<CustomerOrderDTO>> getOrderDetails(@PathVariable String identifier) {
+        return ResponseUtils.handleRequest(() -> ApiResponse.success(deliveryService.getOrderDetails(identifier)));
     }
 
     /**
@@ -77,11 +81,11 @@ public class DeliveryController {
      */
     @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @PatchMapping("/orders/{identifier}/status")
-    public ResponseEntity<Map<String, Object>> updateOrderStatus(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateOrderStatus(
             @PathVariable String identifier,
-            @RequestBody @Valid Map<String, String> requestBody) { // ✅ Validatie toegevoegd
+            @RequestBody @Valid Map<String, String> requestBody) {
 
-        return ResponseUtils.handleRequest(() -> deliveryService.processOrderStatusUpdate(identifier, requestBody));
+        return ResponseUtils.handleRequest(() -> ApiResponse.success(deliveryService.processOrderStatusUpdate(identifier, requestBody)));
     }
 
     /**
@@ -89,9 +93,9 @@ public class DeliveryController {
      */
     @PreAuthorize("hasRole('ROLE_DELIVERY_PERSON')")
     @GetMapping("/orders/{identifier}/items")
-    public ResponseEntity<Map<String, Object>> getOrderItems(@PathVariable String identifier) {
-        return ResponseUtils.handleRequest(() -> Map.of(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> getOrderItems(@PathVariable String identifier) {
+        return ResponseUtils.handleRequest(() -> ApiResponse.success(Map.of(
                 "orderItems", deliveryService.getOrderItems(identifier)
-        ));
+        )));
     }
 }

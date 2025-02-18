@@ -1,6 +1,7 @@
 package com.controller;
 
 import com.dto.CustomerOrderDTO;
+import com.response.ApiResponse;
 import com.security.JwtTokenUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -65,8 +66,8 @@ class RestaurantControllerTest {
         assertEquals(HttpStatus.OK, rawResponse.getStatusCode(), "Expected HTTP 200 OK");
         assertNotNull(rawResponse.getBody(), "Response body should not be null");
 
-        // Fetch and deserialize response as List<CustomerOrderDTO>
-        ResponseEntity<List<CustomerOrderDTO>> response = restTemplate.exchange(
+        // ✅ Deserialize as ApiResponse<List<CustomerOrderDTO>>
+        ResponseEntity<ApiResponse<List<CustomerOrderDTO>>> response = restTemplate.exchange(
                 baseUrl + "/api/v1/restaurants/" + slug + "/orders",
                 HttpMethod.GET,
                 request,
@@ -75,11 +76,16 @@ class RestaurantControllerTest {
 
         assertEquals(HttpStatus.OK, response.getStatusCode(), "Expected HTTP 200 OK");
         assertNotNull(response.getBody(), "Response body should not be null");
-        assertFalse(response.getBody().isEmpty(), "Orders list should not be empty");
+        assertTrue(response.getBody().isSuccess(), "Response should indicate success");
 
-        for (CustomerOrderDTO order : response.getBody()) {
+        List<CustomerOrderDTO> orders = response.getBody().getData(); // ✅ Extract actual orders
+        assertNotNull(orders, "Orders list should not be null");
+        assertFalse(orders.isEmpty(), "Orders list should not be empty");
+
+        for (CustomerOrderDTO order : orders) {
             assertNotNull(order.getOrderNumber(), "Order number should not be null");
             assertNotNull(order.getStatus(), "Order status should not be null");
         }
     }
+
 }

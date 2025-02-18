@@ -3,6 +3,7 @@ package com.controller;
 import com.dto.CustomerOrderDTO;
 import com.dto.RestaurantDTO;
 import com.model.OrderStatus;
+import com.response.ApiResponse;
 import com.repository.AppUserRepository;
 import com.repository.CustomerOrderRepository;
 import com.repository.MenuItemRepository;
@@ -46,7 +47,7 @@ public class RestaurantController {
      * Retrieves a list of all available restaurants with menu items.
      */
     @GetMapping
-    public ResponseEntity<List<RestaurantDTO>> getAllRestaurants() {
+    public ResponseEntity<ApiResponse<List<RestaurantDTO>>> getAllRestaurants() {
         boolean isEmployee = com.utils.AuthUtils.isRestaurantEmployee();
         String username = getLoggedInUsername();
 
@@ -54,7 +55,7 @@ public class RestaurantController {
                 ? restaurantService.getRestaurantsForEmployee(username)
                 : restaurantService.getAllRestaurantsWithMenu();
 
-        return ResponseEntity.ok(restaurantDTOs);
+        return ResponseEntity.ok(ApiResponse.success(restaurantDTOs));
     }
 
     /**
@@ -62,13 +63,13 @@ public class RestaurantController {
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @PatchMapping("/{slug}/orders/{orderId}/status")
-    public ResponseEntity<?> updateOrderStatus(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateOrderStatus(
             @PathVariable String slug,
             @PathVariable String orderId,
             @RequestBody @Valid Map<String, String> requestBody) {
         return handleRequest(() -> {
             String username = getLoggedInUsername();
-            return restaurantService.updateOrderStatus(username, slug, orderId, requestBody);
+            return ApiResponse.success(restaurantService.updateOrderStatus(username, slug, orderId, requestBody));
         });
     }
 
@@ -77,13 +78,13 @@ public class RestaurantController {
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @PutMapping("/{slug}/menu/items/{menuItemId}")
-    public ResponseEntity<?> updateMenuItemAvailability(
+    public ResponseEntity<ApiResponse<Map<String, Object>>> updateMenuItemAvailability(
             @PathVariable String slug,
             @PathVariable Long menuItemId,
             @RequestBody @Valid Map<String, Boolean> request) {
         return handleRequest(() -> {
             String username = getLoggedInUsername();
-            return restaurantService.updateMenuItemAvailability(username, slug, menuItemId, request);
+            return ApiResponse.success(restaurantService.updateMenuItemAvailability(username, slug, menuItemId, request));
         });
     }
 
@@ -102,8 +103,8 @@ public class RestaurantController {
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/orders/{identifier}")
-    public ResponseEntity<?> getOrderByIdentifier(@PathVariable String identifier) {
-        return handleRequest(() -> orderService.getOrderByIdentifier(identifier));
+    public ResponseEntity<ApiResponse<CustomerOrderDTO>> getOrderByIdentifier(@PathVariable String identifier) {
+        return handleRequest(() -> ApiResponse.success(orderService.getOrderByIdentifier(identifier)));
     }
 
     /**
@@ -111,8 +112,8 @@ public class RestaurantController {
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/orders/id/{orderId}")
-    public ResponseEntity<CustomerOrderDTO> getOrderById(@PathVariable Long orderId) {
-        return handleRequest(() -> new CustomerOrderDTO(orderService.getOrderById(orderId)));
+    public ResponseEntity<ApiResponse<CustomerOrderDTO>> getOrderById(@PathVariable Long orderId) {
+        return handleRequest(() -> ApiResponse.success(new CustomerOrderDTO(orderService.getOrderById(orderId))));
     }
 
     /**
@@ -120,10 +121,10 @@ public class RestaurantController {
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/{slug}/orders")
-    public ResponseEntity<?> getOrdersForLoggedInEmployee(@PathVariable String slug) {
+    public ResponseEntity<ApiResponse<List<CustomerOrderDTO>>> getOrdersForLoggedInEmployee(@PathVariable String slug) {
         return handleRequest(() -> {
             String username = getLoggedInUsername();
-            return restaurantService.getOrdersForEmployee(slug, username);
+            return ApiResponse.success(restaurantService.getOrdersForEmployee(slug, username));
         });
     }
 
@@ -132,14 +133,15 @@ public class RestaurantController {
      */
     @PreAuthorize("hasRole('RESTAURANT_EMPLOYEE')")
     @GetMapping("/orders")
-    public ResponseEntity<List<CustomerOrderDTO>> getOrdersByStatus(
+    public ResponseEntity<ApiResponse<List<CustomerOrderDTO>>> getOrdersByStatus(
             @RequestParam(required = false) String status) {
 
         return handleRequest(() -> {
-            if (status != null) {
-                return restaurantService.getOrdersByStatus(OrderStatus.valueOf(status.toUpperCase()));
-            }
-            return restaurantService.getAllOrders();
+            List<CustomerOrderDTO> orders = (status != null)
+                    ? restaurantService.getOrdersByStatus(OrderStatus.valueOf(status.toUpperCase()))
+                    : restaurantService.getAllOrders();
+
+            return ApiResponse.success(orders);
         });
     }
 }
